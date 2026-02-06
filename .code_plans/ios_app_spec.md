@@ -340,21 +340,22 @@ The web app proxies `/api/*` to `http://localhost:8000` during development. The 
 ## 8. User Flow
 
 ### Happy Path
-1. App opens -> Home screen loads, fetches podcasts
-2. Language filter defaults to None (see all)
-3. User scrolls podcast cards horizontally, taps one -> episodes load below
-4. User taps an episode -> if answer language not set or invalid for this podcast's language, modal appears to pick answer language
-5. User picks language (or stored one is valid) -> navigates to Player screen
-6. Player loads: fetches episode metadata + transcript data, starts loading audio
-7. User taps Play -> audio begins, transcript segments appear and update in real-time
-8. User taps a highlighted word in transcript -> Word Explanation Modal opens with translation, meaning, etc.
-9. User taps Ask button -> if not signed in, Clerk sign-in opens first
-10. Audio pauses, microphone activates, UI shows "Listening..." with pulsing orange dot
-11. User asks their question aloud, taps Send (orange arrow button)
-12. Recording stops, "Thinking" spinner appears
-13. Audio blob + episode_id + timestamp + response_language sent to `POST /api/ask`
-14. Answer text received and displayed below the transcript
-15. User can tap Back to return to Home and pick another episode
+1. App opens -> We ask to Authorize (Clerks's SDK)
+2. Home screen loads, fetches podcasts
+3. Language filter defaults to None (see all)
+4. User scrolls podcast cards horizontally, taps one -> episodes load below
+5. User taps an episode -> if answer language not set or invalid for this podcast's language, modal appears to pick answer language
+6. User picks language (or stored one is valid) -> navigates to Player screen
+7. Player loads: fetches episode metadata + transcript data, starts loading audio
+8. User taps Play -> audio begins, transcript segments appear and update in real-time
+9. User taps a highlighted word in transcript -> Word Explanation Modal opens with translation, meaning, etc.
+10. User taps Ask button
+11. Audio pauses, microphone activates, UI shows "Listening..." with pulsing orange dot
+12. User asks their question aloud, taps Send (orange arrow button)
+13. Recording stops, "Thinking" spinner appears
+14. Audio blob + episode_id + timestamp + response_language sent to `POST /api/ask`
+15. Answer text received and displayed below the transcript
+16. User can tap Back to return to Home and pick another episode
 
 ### Cancel Recording Flow
 1. While in "Listening" state, user taps X (cancel button)
@@ -364,7 +365,6 @@ The web app proxies `/api/*` to `http://localhost:8000` during development. The 
 
 ### Error Flows
 - Microphone permission denied -> modal "Microphone permission denied or unavailable."
-- Not signed in when tapping Ask -> Clerk sign-in flow opens
 - API returns 401 -> modal "Unauthorized. Please sign in." with Sign In button
 - API returns 403 -> modal "No questions left."
 - API network error -> modal "Network error while sending question."
@@ -421,14 +421,15 @@ The web app proxies `/api/*` to `http://localhost:8000` during development. The 
 
 ## 10. Key Behaviors to Preserve
 
-1. **Rewind is 15s, forward is 30s** - asymmetric by design
-2. **Audio pauses when recording starts** - does NOT auto-resume after
+1. **Rewind is 15s, forward is 15s** - symmetric
+2. **Audio pauses when question recording starts** - does NOT auto-resume after
 3. **Answer language persists** in local storage across sessions
-4. **Language filter defaults to Spanish** on first load
-5. **Transcript updates in real-time** during playback, showing current + 1 previous segment
-6. **Word explanations are tap-to-reveal** with cyan underline hint
-7. **Speed resets to 1x** when changing episodes
-8. **Recording uses 750ms timeslice** to ensure at least one chunk exists before stop
-9. **Auth is lazy** - only prompted when user actually tries to ask a question, not on app launch
-10. **Screen stays awake** during playback and recording
+4. **Transcript updates in real-time** during playback, showing current + 1 previous segment
+5. **Word explanations are tap-to-reveal** with cyan underline hint
+6. **Speed resets to 1x** when changing episodes
+7. **Recording uses 750ms timeslice** to ensure at least one chunk exists before stop
+8.  **Screen stays awake** during playback and recording
 
+## 10. Key Behaviors to change
+
+1. **Auth is no more lazy** - we ask to sign-in straight away when openning the app
