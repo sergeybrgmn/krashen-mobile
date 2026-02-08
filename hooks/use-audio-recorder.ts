@@ -1,6 +1,34 @@
 import { Audio } from 'expo-av';
 import { useCallback, useRef, useState } from 'react';
 
+/** AAC in .m4a container — compatible with OpenAI Whisper API */
+const RECORDING_OPTIONS: Audio.RecordingOptions = {
+  isMeteringEnabled: false,
+  android: {
+    extension: '.m4a',
+    outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+    audioEncoder: Audio.AndroidAudioEncoder.AAC,
+    sampleRate: 44100,
+    numberOfChannels: 1,
+    bitRate: 128000,
+  },
+  ios: {
+    extension: '.m4a',
+    audioQuality: Audio.IOSAudioQuality.HIGH,
+    outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
+    sampleRate: 44100,
+    numberOfChannels: 1,
+    bitRate: 128000,
+    linearPCMBitDepth: 16,
+    linearPCMIsBigEndian: false,
+    linearPCMIsFloat: false,
+  },
+  web: {
+    mimeType: 'audio/webm',
+    bitsPerSecond: 128000,
+  },
+};
+
 export function useAudioRecorder() {
   const recordingRef = useRef<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -17,9 +45,7 @@ export function useAudioRecorder() {
     });
 
     const recording = new Audio.Recording();
-    await recording.prepareToRecordAsync(
-      Audio.RecordingOptionsPresets.HIGH_QUALITY,
-    );
+    await recording.prepareToRecordAsync(RECORDING_OPTIONS);
     await recording.startAsync();
     recordingRef.current = recording;
     setIsRecording(true);

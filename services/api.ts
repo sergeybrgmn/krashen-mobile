@@ -81,8 +81,8 @@ export async function submitQuestion(
   formData.append('response_language', responseLanguage);
   formData.append('question_audio', {
     uri: audioUri,
-    type: 'audio/m4a',
-    name: 'q.webm',
+    type: 'audio/mp4',
+    name: 'q.m4a',
   } as unknown as Blob);
 
   const res = await fetch(`${API_BASE_URL}/api/ask`, {

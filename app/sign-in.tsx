@@ -1,6 +1,6 @@
-import { useSignIn, useSignUp } from '@clerk/clerk-expo';
+import { useSignIn, useSignUp, useSSO } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -19,6 +19,7 @@ type Mode = 'signIn' | 'signUp';
 export default function SignInScreen() {
   const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn();
   const { signUp, setActive: setSignUpActive, isLoaded: signUpLoaded } = useSignUp();
+  const { startSSOFlow } = useSSO();
   const router = useRouter();
 
   const [mode, setMode] = useState<Mode>('signIn');
@@ -68,6 +69,25 @@ export default function SignInScreen() {
     }
   }
 
+  const handleGoogleSignIn = useCallback(async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const { createdSessionId, setActive } = await startSSOFlow({
+        strategy: 'oauth_google',
+      });
+      if (createdSessionId && setActive) {
+        await setActive({ session: createdSessionId });
+        router.replace('/');
+      }
+    } catch (e: unknown) {
+      const msg = (e as { errors?: { message: string }[] })?.errors?.[0]?.message;
+      setError(msg ?? 'Google sign in failed.');
+    } finally {
+      setLoading(false);
+    }
+  }, [startSSOFlow, router]);
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -80,6 +100,28 @@ export default function SignInScreen() {
 
         {!!error && <ThemedText style={styles.error}>{error}</ThemedText>}
 
+        {/* Google OAuth */}
+        <Pressable
+          style={[styles.googleButton, loading && styles.buttonDisabled]}
+          onPress={handleGoogleSignIn}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={Colors.textPrimary} />
+          ) : (
+            <ThemedText style={styles.googleButtonText}>
+              Continue with Google
+            </ThemedText>
+          )}
+        </Pressable>
+
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <ThemedText type="muted" style={styles.dividerText}>or</ThemedText>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* Email / Password */}
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -158,6 +200,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     fontSize: 15,
+  },
+  googleButton: {
+    backgroundColor: Colors.background,
+    borderRadius: Radii.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  googleButtonText: {
+    color: Colors.textPrimary,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    fontSize: 13,
   },
   button: {
     backgroundColor: Colors.cyan,

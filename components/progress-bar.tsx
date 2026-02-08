@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LayoutChangeEvent, PanResponder, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -29,45 +29,63 @@ export function ProgressBar({ position, duration, buffered, disabled, onSeek }: 
   const trackWidth = useRef(0);
   const [scrubbing, setScrubbing] = useState(false);
   const [scrubPos, setScrubPos] = useState(0);
+  // Hold the seek target after release so we don't snap back to the old position
+  const [seekTarget, setSeekTarget] = useState<number | null>(null);
 
-  const positionToUse = scrubbing ? scrubPos : position;
+  // Clear seekTarget once the player position catches up (within 0.5s)
+  useEffect(() => {
+    if (seekTarget !== null && Math.abs(position - seekTarget) < 0.5) {
+      setSeekTarget(null);
+    }
+  }, [position, seekTarget]);
+
+  const positionToUse = scrubbing ? scrubPos : (seekTarget ?? position);
   const progress = duration > 0 ? positionToUse / duration : 0;
   const bufferedPct = duration > 0 ? buffered / duration : 0;
 
-  const clampSeek = useCallback(
-    (pageX: number, layoutX: number) => {
-      if (disabled || duration <= 0) return 0;
-      const frac = Math.max(0, Math.min(1, (pageX - layoutX) / trackWidth.current));
-      return frac * duration;
-    },
-    [disabled, duration],
-  );
-
   const trackLayoutX = useRef(0);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => !disabled,
-      onMoveShouldSetPanResponder: () => !disabled,
-      onPanResponderGrant: (evt) => {
-        setScrubbing(true);
-        const s = clampSeek(evt.nativeEvent.pageX, trackLayoutX.current);
-        setScrubPos(s);
-      },
-      onPanResponderMove: (evt) => {
-        const s = clampSeek(evt.nativeEvent.pageX, trackLayoutX.current);
-        setScrubPos(s);
-      },
-      onPanResponderRelease: (evt) => {
-        const s = clampSeek(evt.nativeEvent.pageX, trackLayoutX.current);
-        onSeek(s);
-        setScrubbing(false);
-      },
-      onPanResponderTerminate: () => {
-        setScrubbing(false);
-      },
-    }),
-  ).current;
+  // Keep latest values in refs so the PanResponder never goes stale
+  const disabledRef = useRef(disabled);
+  disabledRef.current = disabled;
+  const durationRef = useRef(duration);
+  durationRef.current = duration;
+  const onSeekRef = useRef(onSeek);
+  onSeekRef.current = onSeek;
+
+  const clampSeek = useCallback((pageX: number) => {
+    if (disabledRef.current || durationRef.current <= 0) return 0;
+    const frac = Math.max(0, Math.min(1, (pageX - trackLayoutX.current) / trackWidth.current));
+    return frac * durationRef.current;
+  }, []);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => !disabledRef.current,
+        onMoveShouldSetPanResponder: () => !disabledRef.current,
+        // Capture phase — claim the gesture before the ScrollView can
+        onStartShouldSetPanResponderCapture: () => !disabledRef.current,
+        onMoveShouldSetPanResponderCapture: () => !disabledRef.current,
+        onPanResponderGrant: (evt) => {
+          setScrubbing(true);
+          setScrubPos(clampSeek(evt.nativeEvent.pageX));
+        },
+        onPanResponderMove: (evt) => {
+          setScrubPos(clampSeek(evt.nativeEvent.pageX));
+        },
+        onPanResponderRelease: (evt) => {
+          const s = clampSeek(evt.nativeEvent.pageX);
+          setSeekTarget(s);
+          setScrubbing(false);
+          onSeekRef.current(s);
+        },
+        onPanResponderTerminate: () => {
+          setScrubbing(false);
+        },
+      }),
+    [clampSeek],
+  );
 
   const onTrackLayout = useCallback((e: LayoutChangeEvent) => {
     trackWidth.current = e.nativeEvent.layout.width;
@@ -97,6 +115,7 @@ export function ProgressBar({ position, duration, buffered, disabled, onSeek }: 
         style={styles.track}
         onLayout={onTrackLayoutFull}
         {...panResponder.panHandlers}
+        hitSlop={{ top: 10, bottom: 10 }}
       >
         <View style={styles.trackBg} />
         <View style={[styles.trackBuffered, { width: `${bufferedPct * 100}%` }]} />

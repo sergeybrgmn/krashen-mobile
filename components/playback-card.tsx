@@ -5,6 +5,14 @@ import { ProgressBar } from '@/components/progress-bar';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Radii, Sizes, Spacing } from '@/constants/theme';
 
+const PLAY_SIZE = Sizes.playPauseButton;
+const TRI_SIDE = Math.round(PLAY_SIZE / 3);
+// Equilateral triangle: height = side * √3/2
+const TRI_HEIGHT = Math.round(TRI_SIDE * (Math.sqrt(3) / 2));
+const PAUSE_BAR_W = Math.round(PLAY_SIZE / 10);
+const PAUSE_BAR_H = Math.round(PLAY_SIZE / 3);
+const PAUSE_GAP = Math.round(PLAY_SIZE / 10);
+
 interface Props {
   isPlaying: boolean;
   isLoaded: boolean;
@@ -42,6 +50,13 @@ export function PlaybackCard({
       {/* Transport Controls */}
       <View style={styles.transport}>
         <Pressable
+          style={styles.speedButton}
+          onPress={() => setSpeedModalVisible(true)}
+        >
+          <ThemedText style={styles.speedValue}>{speed}x</ThemedText>
+        </Pressable>
+
+        <Pressable
           style={[styles.skipButton, disabled && styles.disabled]}
           onPress={() => onSkip(-15)}
           disabled={disabled}
@@ -54,9 +69,14 @@ export function PlaybackCard({
           onPress={onTogglePlay}
           disabled={disabled}
         >
-          <ThemedText style={styles.playIcon}>
-            {isPlaying ? '⏸' : '▶'}
-          </ThemedText>
+          {isPlaying ? (
+            <View style={styles.pauseIcon}>
+              <View style={styles.pauseBar} />
+              <View style={styles.pauseBar} />
+            </View>
+          ) : (
+            <View style={styles.playTriangle} />
+          )}
         </Pressable>
 
         <Pressable
@@ -91,14 +111,6 @@ export function PlaybackCard({
             </ThemedText>
           )}
         </View>
-
-        <Pressable
-          style={styles.speedButton}
-          onPress={() => setSpeedModalVisible(true)}
-        >
-          <ThemedText style={styles.speedLabel}>Speed </ThemedText>
-          <ThemedText style={styles.speedValue}>{speed}x</ThemedText>
-        </Pressable>
       </View>
 
       {/* Speed dropdown modal */}
@@ -182,9 +194,27 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  playIcon: {
-    fontSize: 24,
-    color: Colors.black,
+  playTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: TRI_HEIGHT,
+    borderTopWidth: TRI_SIDE / 2,
+    borderBottomWidth: TRI_SIDE / 2,
+    borderLeftColor: Colors.black,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 3,
+  },
+  pauseIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: PAUSE_GAP,
+  },
+  pauseBar: {
+    width: PAUSE_BAR_W,
+    height: PAUSE_BAR_H,
+    backgroundColor: Colors.black,
+    borderRadius: 2,
   },
   disabled: {
     opacity: 0.4,
@@ -202,17 +232,14 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   speedButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: Radii.sm,
     borderWidth: 1,
     borderColor: Colors.border,
-  },
-  speedLabel: {
-    fontSize: 13,
-    color: Colors.textMuted,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 44,
   },
   speedValue: {
     fontSize: 13,
