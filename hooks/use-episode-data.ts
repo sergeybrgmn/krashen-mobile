@@ -29,8 +29,8 @@ export function useEpisodeData(episodeId: string | null, targetLanguage: string 
     fetchEpisodeData(episodeId, targetLanguage)
       .then((data: EpisodeData) => {
         if (cancelled) return;
-        setSegments(data.segments);
-        setExplanations(data.explanations);
+        setSegments(data.segments ?? []);
+        setExplanations(data.explanations ?? {});
       })
       .catch((e) => {
         if (!cancelled) setError(e.message);
