@@ -12,6 +12,9 @@ export interface Episode {
   id: string;
   title: string;
   audio_url: string | null;
+  published_at: string | null;
+  duration: number | null;
+  explanation_languages: string[];
 }
 
 export interface Segment {

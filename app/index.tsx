@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnswerLanguageModal } from '@/components/answer-language-modal';
-import { EpisodePill } from '@/components/episode-pill';
+import { EpisodeCard } from '@/components/episode-card';
 import { LanguagePicker } from '@/components/language-picker';
 import { PodcastCard } from '@/components/podcast-card';
 import { ThemedText } from '@/components/themed-text';
@@ -167,9 +167,9 @@ export default function HomeScreen() {
               </ThemedText>
               <View style={styles.episodeList}>
                 {episodes.map((ep) => (
-                  <EpisodePill
+                  <EpisodeCard
                     key={ep.id}
-                    title={ep.title}
+                    episode={ep}
                     onPress={() => handleEpisodeTap(ep)}
                   />
                 ))}
@@ -225,7 +225,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   episodeList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
   },
 });

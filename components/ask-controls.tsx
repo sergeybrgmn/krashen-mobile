@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Radii, Sizes, Spacing } from '@/constants/theme';
@@ -90,7 +91,8 @@ export function AskControls({
     return (
       <View style={styles.thinkingContainer}>
         <Pressable style={[styles.askButton, styles.askButtonDisabled]} disabled>
-          <ThemedText style={styles.askText}>🎙 Ask</ThemedText>
+          <Ionicons name="mic" size={18} color={Colors.black} style={styles.askIcon} />
+          <ThemedText style={styles.askText}>Ask</ThemedText>
         </Pressable>
         <View style={styles.spinnerRow}>
           <ActivityIndicator color={Colors.cyan} size="small" />
@@ -108,7 +110,8 @@ export function AskControls({
         onPress={onStart}
         disabled={disabled}
       >
-        <ThemedText style={styles.askText}>🎙 Ask</ThemedText>
+        <Ionicons name="mic" size={18} color={Colors.black} style={styles.askIcon} />
+          <ThemedText style={styles.askText}>Ask</ThemedText>
       </Pressable>
     </View>
   );
@@ -124,9 +127,11 @@ const styles = StyleSheet.create({
     minWidth: Sizes.askButton.minWidth,
     backgroundColor: Colors.cyan,
     borderRadius: Radii.pill,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: Spacing.xxl,
+    gap: Spacing.xs,
     shadowColor: Colors.cyan,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
@@ -137,6 +142,9 @@ const styles = StyleSheet.create({
   askButtonDisabled: {
     opacity: 0.5,
     shadowOpacity: 0,
+  },
+  askIcon: {
+    marginTop: 1,
   },
   askText: {
     fontSize: 17,
