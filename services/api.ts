@@ -29,6 +29,7 @@ export interface WordExplanation {
   end_char: number;
   translation: string;
   pos: string;
+  lemma?: string;
   meaning: string;
   pattern: string;
   usage_notes: string;

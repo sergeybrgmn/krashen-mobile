@@ -14,7 +14,9 @@ import { AnswerLanguageModal } from '@/components/answer-language-modal';
 import { EpisodeCard } from '@/components/episode-card';
 import { LanguagePicker } from '@/components/language-picker';
 import { PodcastCard } from '@/components/podcast-card';
+import { ProfileDrawer } from '@/components/profile-drawer';
 import { ThemedText } from '@/components/themed-text';
+import { UserAvatar } from '@/components/user-avatar';
 import { getAnswerLanguages } from '@/constants/answer-languages';
 import { Colors, Spacing } from '@/constants/theme';
 import { useAnswerLanguage } from '@/hooks/use-answer-language';
@@ -33,6 +35,7 @@ export default function HomeScreen() {
 
   const [answerModalVisible, setAnswerModalVisible] = useState(false);
   const [pendingEpisode, setPendingEpisode] = useState<Episode | null>(null);
+  const [drawerVisible, setDrawerVisible] = useState(false);
 
   const filteredPodcasts = useMemo(() => {
     if (!languageFilter) return podcasts;
@@ -112,11 +115,14 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.push('/about')}>
-          <ThemedText type="link" style={styles.infoBanner}>
-            What is Lemino?
-          </ThemedText>
-        </Pressable>
+        <View style={styles.headerRow}>
+          <UserAvatar onPress={() => setDrawerVisible(true)} />
+          <Pressable onPress={() => router.push('/about')}>
+            <ThemedText type="link" style={styles.infoBanner}>
+              What is Lemino?
+            </ThemedText>
+          </Pressable>
+        </View>
 
         <ThemedText type="title" style={styles.pageTitle}>
           Podcasts
@@ -188,6 +194,11 @@ export default function HomeScreen() {
           setPendingEpisode(null);
         }}
       />
+
+      <ProfileDrawer
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -204,9 +215,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingBottom: 40,
   },
-  infoBanner: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: Spacing.md,
     marginBottom: Spacing.lg,
+  },
+  infoBanner: {
     fontSize: 14,
   },
   pageTitle: {

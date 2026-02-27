@@ -1,6 +1,7 @@
 export const Colors = {
   background: '#000000',
   card: 'rgba(15, 23, 42, 0.9)',
+  cardSolid: '#0f172a',
   cardLight: 'rgba(15, 23, 42, 0.85)',
 
   cyan: '#06b6d4',
@@ -57,11 +58,13 @@ export const Typography = {
   },
   title: {
     fontSize: 28,
+    lineHeight: 36,
     fontWeight: 'bold' as const,
     color: Colors.textPrimary,
   },
   subtitle: {
     fontSize: 20,
+    lineHeight: 28,
     fontWeight: '600' as const,
     color: Colors.textPrimary,
   },

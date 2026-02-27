@@ -1,11 +1,13 @@
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { getPosColor, getPosLabel } from '@/constants/pos';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { WordExplanation } from '@/services/api';
 
 interface Props {
   word: WordExplanation | null;
+  targetLanguage?: string;
   onClose: () => void;
 }
 
@@ -21,7 +23,10 @@ function Field({ label, value, italic }: { label: string; value: string; italic?
   );
 }
 
-export function WordExplanationModal({ word, onClose }: Props) {
+export function WordExplanationModal({ word, targetLanguage, onClose }: Props) {
+  const posLabel = word ? getPosLabel(word.pos, targetLanguage ?? 'en') : null;
+  const posColor = word ? getPosColor(word.pos) : '#94a3b8';
+
   return (
     <Modal
       visible={!!word}
@@ -34,7 +39,19 @@ export function WordExplanationModal({ word, onClose }: Props) {
           {word && (
             <>
               <View style={styles.header}>
-                <ThemedText style={styles.surface}>{word.surface}</ThemedText>
+                <View>
+                  <ThemedText style={styles.surface}>{word.surface}</ThemedText>
+                  {(word.pos === 'VERB' || word.pos === 'AUX') && word.lemma && (
+                    <ThemedText style={styles.lemma}>{word.lemma}</ThemedText>
+                  )}
+                  {posLabel && (
+                    <View style={[styles.posBadge, { backgroundColor: posColor + '20' }]}>
+                      <ThemedText style={[styles.posBadgeText, { color: posColor }]}>
+                        {posLabel}
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
                 <Pressable onPress={onClose} hitSlop={12}>
                   <ThemedText style={styles.close}>✕</ThemedText>
                 </Pressable>
@@ -42,7 +59,6 @@ export function WordExplanationModal({ word, onClose }: Props) {
 
               <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
                 <Field label="Translation" value={word.translation} />
-                <Field label="Part of speech" value={word.pos} />
                 <Field label="Meaning" value={word.meaning} />
                 <Field label="Pattern" value={word.pattern} />
                 <Field label="Usage notes" value={word.usage_notes} />
@@ -80,6 +96,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: Colors.cyan,
   },
+  lemma: {
+    fontSize: 15,
+    color: Colors.textPrimary,
+  },
   close: {
     fontSize: 20,
     color: Colors.textMuted,
@@ -104,5 +124,16 @@ const styles = StyleSheet.create({
   },
   italic: {
     fontStyle: 'italic',
+  },
+  posBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  posBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

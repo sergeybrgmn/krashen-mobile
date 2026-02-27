@@ -4,7 +4,7 @@ import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Colors, Radii, Spacing, Typography } from '@/constants/theme';
 
 const ABOUT_CONTENT = `# What is Lemino?
 
@@ -32,21 +32,15 @@ Lemino is built by the Pregunta team. Visit pregunta.app for more.
 
 const markdownStyles = {
   body: {
-    color: Colors.textPrimary,
-    fontSize: 15,
-    lineHeight: 24,
+    ...Typography.base,
   },
   heading1: {
-    color: Colors.textPrimary,
-    fontSize: 28,
-    fontWeight: 'bold' as const,
+    ...Typography.title,
     marginBottom: 16,
     marginTop: 8,
   },
   heading2: {
-    color: Colors.textPrimary,
-    fontSize: 20,
-    fontWeight: '600' as const,
+    ...Typography.subtitle,
     marginBottom: 12,
     marginTop: 20,
   },

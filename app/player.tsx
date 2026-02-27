@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,8 +14,10 @@ import { AskControls } from '@/components/ask-controls';
 import { AnswerBlock } from '@/components/answer-block';
 import { ErrorModal } from '@/components/error-modal';
 import { PlaybackCard } from '@/components/playback-card';
+import { ProfileDrawer } from '@/components/profile-drawer';
 import { ThemedText } from '@/components/themed-text';
 import { TranscriptPanel } from '@/components/transcript-panel';
+import { UserAvatar } from '@/components/user-avatar';
 import { WordExplanationModal } from '@/components/word-explanation-modal';
 import { Colors, Spacing } from '@/constants/theme';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
@@ -53,6 +56,7 @@ export default function PlayerScreen() {
 
   const [answer, setAnswer] = useState<string | null>(null);
   const [selectedWord, setSelectedWord] = useState<WordExplanation | null>(null);
+  const [drawerVisible, setDrawerVisible] = useState(false);
   const [errorModal, setErrorModal] = useState<{
     message: string;
     isAuth: boolean;
@@ -153,11 +157,14 @@ export default function PlayerScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <Pressable onPress={() => router.back()}>
-          <ThemedText type="link" style={styles.backLink}>
-            ← Back to episodes
-          </ThemedText>
-        </Pressable>
+        <View style={styles.headerRow}>
+          <UserAvatar onPress={() => setDrawerVisible(true)} />
+          <Pressable onPress={() => router.back()}>
+            <ThemedText type="link" style={styles.backLink}>
+              ← Back to episodes
+            </ThemedText>
+          </Pressable>
+        </View>
 
         {podcast && (
           <ThemedText type="muted" style={styles.podcastName}>
@@ -215,6 +222,7 @@ export default function PlayerScreen() {
       {/* Word Explanation Modal */}
       <WordExplanationModal
         word={selectedWord}
+        targetLanguage={targetLanguage}
         onClose={() => setSelectedWord(null)}
       />
 
@@ -228,6 +236,11 @@ export default function PlayerScreen() {
           setErrorModal(null);
           router.push('/sign-in');
         }}
+      />
+
+      <ProfileDrawer
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
       />
     </SafeAreaView>
   );
@@ -250,8 +263,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  backLink: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
     marginTop: Spacing.md,
+  },
+  backLink: {
     fontSize: 14,
   },
   podcastName: {
