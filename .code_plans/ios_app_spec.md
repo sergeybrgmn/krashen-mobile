@@ -1,12 +1,12 @@
-# Lemino iOS App - Functional Specification
+# Krashen Mobile App - Functional Specification
 
-> Use this document as the complete instruction set for rebuilding the Pregunta web app as a React Native / Expo iOS app with a new name "Lemino". It describes every screen, component, user flow, API contract, and behavioral detail.
+> Use this document as the complete instruction set for building the Krashen mobile app as a React Native / Expo iOS app. It describes every screen, component, user flow, API contract, and behavioral detail.
 
 ---
 
 ## 1. App Overview
 
-Lemino is an interactive podcast learning app.
+Krashen is an interactive podcast learning app.
 Users browse podcasts, listen to episodes, and can in any moment pause and see the explanation of somey non-trivial words or multi-word expression for the current slice of the transcript.
 User just has to click in the word to see the explanation details.
 
@@ -29,7 +29,7 @@ The app has 3 screens:
 
 ### Layout (top to bottom)
 
-1. **Info banner** - a tappable link to the About screen, small text like "What is Lemino?"
+1. **Info banner** - a tappable link to the About screen, small text like "What is Krashen?"
 2. **Page title** - "Podcasts"
 3. **Language filter dropdown** - filters the podcast list by language
 4. **Podcast horizontal scroll list** - cards showing podcast cover + title
@@ -90,7 +90,7 @@ default (others)       -> answer options: en
 Also we now should let to listen only after Auth.
 
 **Logic:**
-1. The last-used answer language is persisted in local storage (key: `lemino-answer-language`)
+1. The last-used answer language is persisted in local storage (key: `krashen-answer-language`)
 2. On episode tap, check if the stored answer language is valid for the selected podcast's language
 3. If valid -> navigate directly to Player
 4. If not valid (or not set) -> show a modal asking the user to pick from the allowed languages
@@ -303,7 +303,7 @@ Audio.setAudioModeAsync({
 ## 5. Screen 3: About
 
 - Back link "Back to podcasts" (navigates to Home)
-- Title: "What is Lemino and how to use it"
+- Title: "What is Krashen and how to use it"
 - Body: rendered markdown content (static, from a bundled markdown file)
 
 ---
@@ -321,7 +321,7 @@ Audio.setAudioModeAsync({
 
 ## 7. API Base URL Configuration
 
-The web app proxies `/api/*` to `http://localhost:8000` during development. The production backend is at `http://pregunta.app`. For the React Native app:
+The web app proxies `/api/*` to `http://localhost:8000` during development. The production backend is at `https://pregunta.app`. For the React Native app:
 - Use a configurable base URL environment variable: `EXPO_PUBLIC_API_BASE_URL`
 - Default/current value: `https://pregunta.app`
 - All API calls prefix this base URL: `${API_BASE_URL}/api/podcasts`, etc.

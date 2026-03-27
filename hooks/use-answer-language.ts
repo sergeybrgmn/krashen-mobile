@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 
-const STORAGE_KEY = 'lemino-answer-language';
+const STORAGE_KEY = 'krashen-answer-language';
 
 export function useAnswerLanguage() {
   const [answerLanguage, setAnswerLanguage] = useState<string | null>(null);

@@ -119,7 +119,7 @@ export default function HomeScreen() {
           <UserAvatar onPress={() => setDrawerVisible(true)} />
           <Pressable onPress={() => router.push('/about')}>
             <ThemedText type="link" style={styles.infoBanner}>
-              What is Lemino?
+              What is Krashen?
             </ThemedText>
           </Pressable>
         </View>

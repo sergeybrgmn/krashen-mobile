@@ -4,12 +4,12 @@ import { useEffect } from 'react';
 export function useWakeLock(active: boolean) {
   useEffect(() => {
     if (active) {
-      activateKeepAwakeAsync('lemino');
+      activateKeepAwakeAsync('krashen');
     } else {
-      deactivateKeepAwake('lemino');
+      deactivateKeepAwake('krashen');
     }
     return () => {
-      deactivateKeepAwake('lemino');
+      deactivateKeepAwake('krashen');
     };
   }, [active]);
 }

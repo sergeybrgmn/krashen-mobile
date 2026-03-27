@@ -1,21 +1,23 @@
 {
   "expo": {
-    "name": "Lemino",
-    "slug": "lemino-app",
+    "name": "Krashen",
+    "slug": "krashen-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "leminoapp",
+    "scheme": "krashen",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
         "UIBackgroundModes": [
+          "audio",
           "audio"
         ],
-        "NSMicrophoneUsageDescription": "Lemino needs microphone access to record your spoken questions."
-      }
+        "NSMicrophoneUsageDescription": "Krashen needs microphone access to record your spoken questions."
+      },
+      "bundleIdentifier": "com.anonymous.krashenmobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +27,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.krashenmobile"
     },
     "web": {
       "output": "static",

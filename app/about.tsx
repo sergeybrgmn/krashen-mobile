@@ -6,9 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Radii, Spacing, Typography } from '@/constants/theme';
 
-const ABOUT_CONTENT = `# What is Lemino?
+const ABOUT_CONTENT = `# What is Krashen?
 
-Lemino is an interactive podcast learning app. It helps you learn languages by listening to real podcast content while getting real-time support.
+Krashen is an interactive podcast learning app. It helps you learn languages by listening to real podcast content while getting real-time support.
 
 ## How to use it
 
@@ -27,7 +27,7 @@ Lemino is an interactive podcast learning app. It helps you learn languages by l
 
 ## Contact
 
-Lemino is built by the Pregunta team. Visit pregunta.app for more.
+Krashen is built by the Krashen team. Visit pregunta.app for more.
 `;
 
 const markdownStyles = {
