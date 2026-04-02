@@ -6,7 +6,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Krashen is an interactive podcast learning app built with React Native / Expo (SDK 54). Users browse podcasts, listen to episodes with real-time transcript display, tap words for explanations/translations, and ask spoken questions that get AI-generated answers.
 
-The app is in early development. The target architecture is defined in `.code_plans/ios_app_spec.md`, which is the authoritative spec for all screens, APIs, components, and behaviors.
 
 ## Commands
 
