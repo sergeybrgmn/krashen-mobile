@@ -45,6 +45,15 @@ export interface AskResponse {
   answer: string;
 }
 
+export interface Me {
+  id: string;
+  name: string | null;
+  email: string | null;
+  response_language: string | null;
+  questions_left: number;
+  created_at: string;
+}
+
 async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, init);
   if (!res.ok) {
@@ -70,6 +79,18 @@ export function fetchEpisodeData(
   return fetchJSON(
     `/api/episode/${episodeId}/data?target_language=${encodeURIComponent(targetLanguage)}`,
   );
+}
+
+export async function fetchMe(token: string): Promise<Me> {
+  const res = await fetch(`${API_BASE_URL}/api/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = new Error(`API ${res.status}`) as Error & { status: number };
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
 }
 
 export async function submitQuestion(

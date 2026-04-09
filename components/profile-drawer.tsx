@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
+import { useMe } from '@/hooks/use-me';
 
 const DRAWER_WIDTH = Math.round(Dimensions.get('window').width * 7 / 8);
 const TIMING_CONFIG = { duration: 280 };
@@ -24,6 +25,7 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   const { user } = useUser();
   const { signOut } = useAuth();
   const insets = useSafeAreaInsets();
+  const { me, loading: meLoading } = useMe(visible);
 
   const translateX = useSharedValue(-DRAWER_WIDTH);
   const backdropOpacity = useSharedValue(0);
@@ -69,6 +71,16 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
           ) : null}
         </View>
 
+        {/* Quota */}
+        <View style={styles.quotaSection}>
+          <ThemedText type="small" style={styles.quotaLabel}>
+            Questions left
+          </ThemedText>
+          <ThemedText style={styles.quotaValue}>
+            {meLoading && !me ? '…' : me ? me.questions_left : '—'}
+          </ThemedText>
+        </View>
+
         {/* Empty section for future menu items */}
         <View style={styles.menuSection} />
 
@@ -108,6 +120,22 @@ const styles = StyleSheet.create({
   },
   email: {
     marginTop: Spacing.xs,
+  },
+  quotaSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
+  },
+  quotaLabel: {
+    color: Colors.textMuted,
+  },
+  quotaValue: {
+    color: Colors.cyan,
+    fontSize: 18,
+    fontWeight: '600',
   },
   menuSection: {
     flex: 1,
