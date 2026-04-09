@@ -111,7 +111,8 @@ export default function PlayerScreen() {
     if (!uri || !episodeId || !targetLanguage) return;
 
     try {
-      const token = await getToken();
+      const jwtTemplate = process.env.EXPO_PUBLIC_CLERK_JWT_TEMPLATE;
+      const token = await getToken(jwtTemplate ? { template: jwtTemplate } : undefined);
       if (!token) {
         setErrorModal({ message: 'Unauthorized. Please sign in.', isAuth: true });
         return;
