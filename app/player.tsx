@@ -137,6 +137,8 @@ export default function PlayerScreen() {
         uri,
       );
       setAnswer(result.answer);
+      // Refresh quota so the gate in handleAskStart stays current.
+      void refetchMe();
     } catch (e: unknown) {
       const status = (e as { status?: number }).status;
       if (status === 401) {
