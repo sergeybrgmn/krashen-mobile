@@ -51,6 +51,9 @@ export interface Me {
   email: string | null;
   response_language: string | null;
   questions_left: number;
+  is_subscribed: boolean;
+  subscription_status: string | null;
+  subscription_expires_at: string | null;
   created_at: string;
 }
 

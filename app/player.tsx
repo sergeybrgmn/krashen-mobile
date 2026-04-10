@@ -24,6 +24,8 @@ import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
 import { useAskQuestion } from '@/hooks/use-ask-question';
 import { useEpisodeData } from '@/hooks/use-episode-data';
+import { useMe } from '@/hooks/use-me';
+import { usePaywall } from '@/hooks/use-paywall';
 import { useWakeLock } from '@/hooks/use-wake-lock';
 import {
   Episode,
@@ -53,6 +55,8 @@ export default function PlayerScreen() {
   );
   const recorder = useAudioRecorder();
   const askQuestion = useAskQuestion();
+  const { me, refetch: refetchMe } = useMe();
+  const presentPaywall = usePaywall();
 
   const [answer, setAnswer] = useState<string | null>(null);
   const [selectedWord, setSelectedWord] = useState<WordExplanation | null>(null);
@@ -89,8 +93,16 @@ export default function PlayerScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [podcastId, episodeId]);
 
-  // Ask flow
+  // Ask flow — gate on subscription/quota before recording.
   const handleAskStart = useCallback(async () => {
+    if (!me?.is_subscribed && (me?.questions_left ?? 0) <= 0) {
+      const purchased = await presentPaywall();
+      if (!purchased) return;
+      // Webhook may need a moment to reach the backend.
+      // Refetch /api/me to pull fresh subscription state.
+      await refetchMe();
+    }
+
     await player.pause();
     try {
       await recorder.start();
@@ -100,7 +112,7 @@ export default function PlayerScreen() {
         isAuth: false,
       });
     }
-  }, [player, recorder]);
+  }, [me, player, recorder, presentPaywall, refetchMe]);
 
   const handleAskCancel = useCallback(() => {
     recorder.cancel();
@@ -130,7 +142,11 @@ export default function PlayerScreen() {
       if (status === 401) {
         setErrorModal({ message: 'Unauthorized. Please sign in.', isAuth: true });
       } else if (status === 403) {
-        setErrorModal({ message: 'No questions left.', isAuth: false });
+        // Server-side quota backstop. Present paywall so user can upgrade.
+        const purchased = await presentPaywall();
+        if (purchased) {
+          await refetchMe();
+        }
       } else if (status) {
         setErrorModal({ message: `Request failed (${status}).`, isAuth: false });
       } else {
@@ -140,7 +156,7 @@ export default function PlayerScreen() {
         });
       }
     }
-  }, [recorder, episodeId, targetLanguage, getToken, askQuestion, player.position]);
+  }, [recorder, episodeId, targetLanguage, getToken, askQuestion, player.position, presentPaywall, refetchMe]);
 
   if (metaLoading) {
     return (

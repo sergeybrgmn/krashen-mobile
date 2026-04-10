@@ -3,17 +3,21 @@ import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import 'react-native-reanimated';
 
 import { tokenCache } from '@/services/auth';
+import { configurePurchases, identifyUser, resetUser } from '@/services/purchases';
 
 SplashScreen.preventAutoHideAsync();
 
 const CLERK_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
+// Configure RevenueCat once on JS load (before any component renders).
+configurePurchases();
+
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded, userId } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -34,6 +38,20 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       SplashScreen.hideAsync();
     }
   }, [isLoaded]);
+
+  // Link RevenueCat ↔ Clerk user. Uses a ref to avoid re-firing on Clerk
+  // session-refresh churn (getToken/isSignedIn references change on refresh).
+  const prevUserIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (isSignedIn && userId && userId !== prevUserIdRef.current) {
+      prevUserIdRef.current = userId;
+      void identifyUser(userId);
+    } else if (!isSignedIn && prevUserIdRef.current) {
+      prevUserIdRef.current = null;
+      void resetUser();
+    }
+  }, [isLoaded, isSignedIn, userId]);
 
   return <>{children}</>;
 }
