@@ -1,7 +1,8 @@
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect } from 'react';
-import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Dimensions, Pressable, StyleSheet, View } from 'react-native';
+import Purchases from 'react-native-purchases';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -21,11 +22,28 @@ interface ProfileDrawerProps {
   onClose: () => void;
 }
 
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   const { user } = useUser();
   const { signOut } = useAuth();
   const insets = useSafeAreaInsets();
-  const { me, loading: meLoading } = useMe(visible);
+  const { me, loading: meLoading, refetch: refetchMe } = useMe(visible);
+  const [restoring, setRestoring] = useState(false);
+
+  const handleRestore = useCallback(async () => {
+    setRestoring(true);
+    try {
+      await Purchases.restorePurchases();
+      await refetchMe();
+    } finally {
+      setRestoring(false);
+    }
+  }, [refetchMe]);
 
   const translateX = useSharedValue(-DRAWER_WIDTH);
   const backdropOpacity = useSharedValue(0);
@@ -71,18 +89,51 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
           ) : null}
         </View>
 
-        {/* Quota */}
+        {/* Plan & Quota */}
         <View style={styles.quotaSection}>
-          <ThemedText type="small" style={styles.quotaLabel}>
-            Questions left
-          </ThemedText>
-          <ThemedText style={styles.quotaValue}>
-            {meLoading && !me ? '…' : me ? me.questions_left : '—'}
-          </ThemedText>
+          <View>
+            <ThemedText type="small" style={styles.quotaLabel}>
+              Plan
+            </ThemedText>
+            {me?.is_subscribed ? (
+              <View style={styles.planRow}>
+                <ThemedText style={styles.planBadge}>Pro</ThemedText>
+                {me.subscription_expires_at ? (
+                  <ThemedText type="small" style={styles.expiryText}>
+                    {me.subscription_status === 'cancelled' ? 'Expires' : 'Renews'}{' '}
+                    {formatDate(me.subscription_expires_at)}
+                  </ThemedText>
+                ) : null}
+              </View>
+            ) : (
+              <ThemedText style={styles.planFree}>Free</ThemedText>
+            )}
+          </View>
+          <View style={styles.quotaRight}>
+            <ThemedText style={styles.quotaValue}>
+              {meLoading && !me ? '…' : me ? me.questions_left : '—'}
+            </ThemedText>
+            <ThemedText type="small" style={styles.quotaLabel}>
+              {me?.is_subscribed ? 'left this month' : 'questions left'}
+            </ThemedText>
+          </View>
         </View>
 
-        {/* Empty section for future menu items */}
-        <View style={styles.menuSection} />
+        {/* Menu */}
+        <View style={styles.menuSection}>
+          <Pressable
+            style={styles.menuItem}
+            onPress={handleRestore}
+            disabled={restoring}
+          >
+            {restoring ? (
+              <ActivityIndicator size="small" color={Colors.cyan} />
+            ) : (
+              <Ionicons name="refresh-outline" size={20} color={Colors.textSecondary} />
+            )}
+            <ThemedText style={styles.menuItemText}>Restore Purchases</ThemedText>
+          </Pressable>
+        </View>
 
         {/* Sign out */}
         <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.xl }]}>
@@ -132,6 +183,33 @@ const styles = StyleSheet.create({
   quotaLabel: {
     color: Colors.textMuted,
   },
+  planRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  planBadge: {
+    color: Colors.black,
+    backgroundColor: Colors.cyan,
+    fontSize: 13,
+    fontWeight: '700',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  planFree: {
+    color: Colors.textSecondary,
+    fontSize: 15,
+    marginTop: Spacing.xs,
+  },
+  expiryText: {
+    color: Colors.textMuted,
+  },
+  quotaRight: {
+    alignItems: 'flex-end',
+  },
   quotaValue: {
     color: Colors.cyan,
     fontSize: 18,
@@ -139,6 +217,17 @@ const styles = StyleSheet.create({
   },
   menuSection: {
     flex: 1,
+    paddingTop: Spacing.md,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+  },
+  menuItemText: {
+    color: Colors.textSecondary,
+    fontSize: 15,
   },
   footer: {
     borderTopWidth: StyleSheet.hairlineWidth,

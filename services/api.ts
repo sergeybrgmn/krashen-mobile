@@ -120,8 +120,17 @@ export async function submitQuestion(
   });
 
   if (!res.ok) {
-    const err = new Error(`API ${res.status}`) as Error & { status: number };
+    const err = new Error(`API ${res.status}`) as Error & {
+      status: number;
+      detail?: { code?: string; message?: string; reset_at?: string };
+    };
     err.status = res.status;
+    if (res.status === 403) {
+      try {
+        const body = await res.json();
+        err.detail = body.detail;
+      } catch { /* ignore parse errors */ }
+    }
     throw err;
   }
   return res.json();

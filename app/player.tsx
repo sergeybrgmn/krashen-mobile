@@ -141,10 +141,22 @@ export default function PlayerScreen() {
       void refetchMe();
     } catch (e: unknown) {
       const status = (e as { status?: number }).status;
+      const detail = (e as { detail?: { code?: string; message?: string; reset_at?: string } }).detail;
       if (status === 401) {
         setErrorModal({ message: 'Unauthorized. Please sign in.', isAuth: true });
+      } else if (status === 403 && detail?.code === 'pro_monthly_limit_reached') {
+        // Pro user hit the monthly cap. Show informational message with reset date.
+        const resetDate = detail.reset_at
+          ? new Date(detail.reset_at).toLocaleDateString(undefined, {
+              month: 'short', day: 'numeric',
+            })
+          : '';
+        setErrorModal({
+          message: `Monthly question limit reached.${resetDate ? ` Resets ${resetDate}.` : ''}`,
+          isAuth: false,
+        });
       } else if (status === 403) {
-        // Server-side quota backstop. Present paywall so user can upgrade.
+        // Free tier exhausted. Present paywall so user can upgrade.
         const purchased = await presentPaywall();
         if (purchased) {
           await refetchMe();
