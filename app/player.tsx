@@ -34,6 +34,7 @@ import {
   fetchPodcasts,
   fetchEpisodes,
 } from '@/services/api';
+import { posthog } from '@/services/analytics';
 
 export default function PlayerScreen() {
   const { podcastId, episodeId, targetLanguage } = useLocalSearchParams<{
@@ -83,6 +84,11 @@ export default function PlayerScreen() {
         setMetaLoading(false);
         if (ep?.audio_url) {
           player.load(ep.audio_url);
+          posthog?.capture('episode_started', {
+            episode_id: episodeId,
+            podcast_id: podcastId,
+            target_language: targetLanguage,
+          });
         }
       },
     );
@@ -92,6 +98,15 @@ export default function PlayerScreen() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [podcastId, episodeId]);
+
+  const handleWordPress = useCallback((word: WordExplanation) => {
+    setSelectedWord(word);
+    posthog?.capture('word_tapped', {
+      word: word?.text,
+      episode_id: episodeId,
+      target_language: targetLanguage,
+    });
+  }, [episodeId, targetLanguage]);
 
   // Ask flow — gate on subscription/quota before recording.
   const handleAskStart = useCallback(async () => {
@@ -242,7 +257,7 @@ export default function PlayerScreen() {
             explanations={explanations}
             currentTime={player.position}
             loading={dataLoading}
-            onWordPress={setSelectedWord}
+            onWordPress={handleWordPress}
           />
         )}
 
