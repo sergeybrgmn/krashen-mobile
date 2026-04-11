@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import { tokenCache } from '@/services/auth';
 import { configurePurchases, identifyUser, resetUser } from '@/services/purchases';
+import { configureAnalytics, identifyAnalyticsUser, resetAnalyticsUser } from '@/services/analytics';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -15,6 +16,9 @@ const CLERK_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
 // Configure RevenueCat once on JS load (before any component renders).
 configurePurchases();
+
+// Initialize PostHog analytics (async, non-blocking).
+void configureAnalytics();
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded, userId } = useAuth();
@@ -47,9 +51,11 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (isSignedIn && userId && userId !== prevUserIdRef.current) {
       prevUserIdRef.current = userId;
       void identifyUser(userId);
+      identifyAnalyticsUser(userId);
     } else if (!isSignedIn && prevUserIdRef.current) {
       prevUserIdRef.current = null;
       void resetUser();
+      resetAnalyticsUser();
     }
   }, [isLoaded, isSignedIn, userId]);
 
