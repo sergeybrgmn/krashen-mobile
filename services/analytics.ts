@@ -1,4 +1,4 @@
-import PostHog from 'posthog-react-native';
+import { PostHog } from 'posthog-react-native';
 
 const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '';
 const POSTHOG_HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
@@ -12,7 +12,7 @@ let posthog: PostHog | null = null;
 export async function configureAnalytics(): Promise<void> {
   if (!POSTHOG_KEY || posthog) return;
 
-  posthog = await PostHog.initAsync(POSTHOG_KEY, {
+  posthog = new PostHog(POSTHOG_KEY, {
     host: POSTHOG_HOST,
   });
 }
