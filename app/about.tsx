@@ -1,33 +1,51 @@
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Radii, Spacing, Typography } from '@/constants/theme';
 
-const ABOUT_CONTENT = `# What is Krashen?
+const ABOUT_CONTENT = `# About Krashen
 
-Krashen is an interactive podcast learning app. It helps you learn languages by listening to real podcast content while getting real-time support.
+Listening to podcasts is a proven, tutor-recommended way to learn a new language — except, in practice, you end up missing words, rewinding, and guessing what was said. So it rarely works.
 
-## How to use it
+**Krashen** is a podcast player that fixes that. You listen to the same shows you'd find on any other podcast app, but at any moment you can pause and see the explanation and translation of any word — or ask a question about the last few seconds: clarify something you didn't catch, ask for the meaning of an idiom, or request a translation.
 
-1. **Browse podcasts** — Filter by language and pick a podcast that interests you.
-2. **Pick an episode** — Tap any episode to start listening.
-3. **Read the transcript** — As the audio plays, the transcript updates in real-time.
-4. **Tap words for explanations** — Words with a cyan underline have explanations. Tap them to see translations, grammar notes, and usage examples.
-5. **Ask questions** — Tap the "Ask" button, speak your question, and get an AI-generated answer based on what you're listening to.
+Nothing has to slip by anymore.
 
-## Tips
+## What Krashen is not
 
-- Use the **speed control** to slow down or speed up the audio.
-- Use the **-15s / +15s** buttons to jump back or forward.
-- Your **answer language preference** is saved so you don't have to pick it every time.
-- The screen stays awake while you're listening or recording.
+Krashen is **not** a translation tool. We don't aim to let you listen to podcasts in your preferred language — that's simply not our mission.
 
-## Contact
+We believe in consuming content in its original language.
 
-Krashen is built by the Krashen team. Visit pregunta.app for more.
+However, we plan to add an *Explain* mode so you can ask questions even when listening for general interest, not just for language practice.
+
+## FAQ
+
+### Why is the podcast collection so small?
+
+Preparing each podcast for interactive dialogue has a cost. We're focused on professional language-learning content first and plan to expand the catalog over time.
+
+### Can I add my favorite podcast or episode?
+
+Yes, we plan to offer all users a monthly quota to add their own podcasts.
+
+### Why "Krashen"?
+
+The app is named after **Stephen Krashen** ([Wikipedia](https://en.wikipedia.org/wiki/Stephen_Krashen)), a linguist known for his theory of second language acquisition. His *input hypothesis* argues that we acquire language by understanding messages slightly beyond our current level. That idea is at the heart of what we do — helping you learn by engaging with real content and asking questions as you listen.
+
+## Get in touch
+
+Questions, podcast suggestions, or feedback? Write to us at info@krashen.app — we read every message.
+
+## Disclaimers
+
+- Krashen does not store your audio recordings — only their transcriptions, used to generate personalized learning content.
+- Microphone access is used only while you record a question.
+- Krashen is not a replacement for professional tutoring, but a companion that makes listening practice more effective.
+- While we don't promise specific learning results, we genuinely believe that interactive listening and active questioning significantly improve language comprehension and retention.
 `;
 
 const markdownStyles = {
@@ -95,6 +113,22 @@ export default function AboutScreen() {
         </Pressable>
 
         <Markdown style={markdownStyles}>{ABOUT_CONTENT}</Markdown>
+
+        <View style={styles.legalLinks}>
+          <Pressable onPress={() => router.push('/privacy')}>
+            <ThemedText type="link" style={styles.legalLink}>
+              Privacy Policy
+            </ThemedText>
+          </Pressable>
+          <ThemedText type="small" style={styles.legalDivider}>
+            ·
+          </ThemedText>
+          <Pressable onPress={() => router.push('/terms')}>
+            <ThemedText type="link" style={styles.legalLink}>
+              Terms of Service
+            </ThemedText>
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -116,5 +150,21 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     marginBottom: Spacing.lg,
     fontSize: 14,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.xl,
+    paddingTop: Spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+  },
+  legalLink: {
+    fontSize: 14,
+  },
+  legalDivider: {
+    color: Colors.textMuted,
   },
 });

@@ -1,7 +1,7 @@
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Pressable, StyleSheet, Switch, View } from 'react-native';
 import Purchases from 'react-native-purchases';
 import Animated, {
   useSharedValue,
@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
+import { useConsent } from '@/hooks/use-consent';
 import { useMe } from '@/hooks/use-me';
 
 const DRAWER_WIDTH = Math.round(Dimensions.get('window').width * 7 / 8);
@@ -34,6 +35,7 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   const insets = useSafeAreaInsets();
   const { me, loading: meLoading, refetch: refetchMe } = useMe(visible);
   const [restoring, setRestoring] = useState(false);
+  const { accepted: analyticsAccepted, update: setAnalyticsConsent } = useConsent();
 
   const handleRestore = useCallback(async () => {
     setRestoring(true);
@@ -133,6 +135,24 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
             )}
             <ThemedText style={styles.menuItemText}>Restore Purchases</ThemedText>
           </Pressable>
+
+          <View style={styles.menuItem}>
+            <Ionicons name="stats-chart-outline" size={20} color={Colors.textSecondary} />
+            <View style={styles.analyticsRow}>
+              <View style={styles.analyticsLabels}>
+                <ThemedText style={styles.menuItemText}>Share analytics</ThemedText>
+                <ThemedText type="small" style={styles.analyticsHint}>
+                  Helps us improve Krashen
+                </ThemedText>
+              </View>
+              <Switch
+                value={analyticsAccepted}
+                onValueChange={setAnalyticsConsent}
+                trackColor={{ false: Colors.border, true: Colors.cyan }}
+                thumbColor={Colors.white}
+              />
+            </View>
+          </View>
         </View>
 
         {/* Sign out */}
@@ -228,6 +248,20 @@ const styles = StyleSheet.create({
   menuItemText: {
     color: Colors.textSecondary,
     fontSize: 15,
+  },
+  analyticsRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  analyticsLabels: {
+    flex: 1,
+  },
+  analyticsHint: {
+    color: Colors.textMuted,
+    marginTop: 2,
   },
   footer: {
     borderTopWidth: StyleSheet.hairlineWidth,
