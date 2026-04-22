@@ -17,9 +17,19 @@ let configured = false;
  * so dev builds without Crisp credentials still boot cleanly.
  */
 export function configureCrisp(): void {
-  if (!WEBSITE_ID || configured) return;
+  if (configured) return;
+  if (!WEBSITE_ID) {
+    if (__DEV__) {
+      console.warn(
+        '[crisp] EXPO_PUBLIC_CRISP_WEBSITE_ID is not set — chat is disabled. ' +
+          'Add it to .env and rebuild natives.',
+      );
+    }
+    return;
+  }
   configure(WEBSITE_ID);
   configured = true;
+  if (__DEV__) console.log('[crisp] configured with website id', WEBSITE_ID);
 }
 
 export type CrispUser = {
@@ -53,7 +63,15 @@ export function resetCrispUser(): void {
  * Open the Crisp chat UI. No-op if Crisp isn't configured.
  */
 export function openSupportChat(): void {
-  if (!configured) return;
+  if (!configured) {
+    if (__DEV__) {
+      console.warn(
+        '[crisp] openSupportChat called but SDK is not configured. ' +
+          'Check EXPO_PUBLIC_CRISP_WEBSITE_ID and that you rebuilt natives after installing the package.',
+      );
+    }
+    return;
+  }
   show();
 }
 
