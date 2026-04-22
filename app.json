@@ -11,7 +11,9 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "NSMicrophoneUsageDescription": "Krashen needs microphone access to record your spoken questions.",
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -44,7 +46,15 @@
         }
       ],
       "expo-secure-store",
-      "expo-localization"
+      "expo-localization",
+      "crisp-sdk-react-native",
+      [
+        "expo-build-properties",
+        {
+          "ios": { "deploymentTarget": "15.1" },
+          "android": { "minSdkVersion": 21 }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

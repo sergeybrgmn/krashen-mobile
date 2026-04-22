@@ -5,8 +5,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Radii, Spacing, Typography } from '@/constants/theme';
+import { openSupportChat } from '@/services/crisp';
 
-const ABOUT_CONTENT = `# About Krashen
+const ABOUT_INTRO = `# About Krashen
 
 Listening to podcasts is a proven, tutor-recommended way to learn a new language — except, in practice, you end up missing words, rewinding, and guessing what was said. So it rarely works.
 
@@ -38,9 +39,10 @@ The app is named after **Stephen Krashen** ([Wikipedia](https://en.wikipedia.org
 
 ## Get in touch
 
-Questions, podcast suggestions, or feedback? Write to us at info@krashen.app — we read every message.
+Questions, podcast suggestions, or feedback? Start a chat below, or write to us at info@krashen.app — we read every message.
+`;
 
-## Disclaimers
+const ABOUT_OUTRO = `## Disclaimers
 
 - Krashen does not store your audio recordings — only their transcriptions, used to generate personalized learning content.
 - Microphone access is used only while you record a question.
@@ -112,7 +114,18 @@ export default function AboutScreen() {
           </ThemedText>
         </Pressable>
 
-        <Markdown style={markdownStyles}>{ABOUT_CONTENT}</Markdown>
+        <Markdown style={markdownStyles}>{ABOUT_INTRO}</Markdown>
+
+        <Pressable
+          style={({ pressed }) => [styles.chatButton, pressed && styles.chatButtonPressed]}
+          onPress={openSupportChat}
+          accessibilityRole="button"
+          accessibilityLabel="Start a chat with support"
+        >
+          <ThemedText style={styles.chatButtonText}>Start a chat</ThemedText>
+        </Pressable>
+
+        <Markdown style={markdownStyles}>{ABOUT_OUTRO}</Markdown>
 
         <View style={styles.legalLinks}>
           <Pressable onPress={() => router.push('/privacy')}>
@@ -150,6 +163,23 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     marginBottom: Spacing.lg,
     fontSize: 14,
+  },
+  chatButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.cyan,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: Radii.pill,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  chatButtonPressed: {
+    opacity: 0.8,
+  },
+  chatButtonText: {
+    color: Colors.black,
+    fontSize: 15,
+    fontWeight: '600',
   },
   legalLinks: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
+import { ClerkProvider, useAuth, useUser } from '@clerk/clerk-expo';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { tokenCache } from '@/services/auth';
 import { configurePurchases, identifyUser, resetUser } from '@/services/purchases';
 import { configureAnalytics, identifyAnalyticsUser, resetAnalyticsUser } from '@/services/analytics';
+import { configureCrisp, identifyCrispUser, resetCrispUser } from '@/services/crisp';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -20,8 +21,12 @@ configurePurchases();
 // Initialize PostHog analytics (async, non-blocking).
 void configureAnalytics();
 
+// Initialize Crisp chat SDK (no-op if website id missing).
+configureCrisp();
+
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded, userId } = useAuth();
+  const { user } = useUser();
   const segments = useSegments();
   const router = useRouter();
 
@@ -52,12 +57,18 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       prevUserIdRef.current = userId;
       void identifyUser(userId);
       identifyAnalyticsUser(userId);
+      identifyCrispUser({
+        id: userId,
+        email: user?.primaryEmailAddress?.emailAddress,
+        name: user?.fullName,
+      });
     } else if (!isSignedIn && prevUserIdRef.current) {
       prevUserIdRef.current = null;
       void resetUser();
       resetAnalyticsUser();
+      resetCrispUser();
     }
-  }, [isLoaded, isSignedIn, userId]);
+  }, [isLoaded, isSignedIn, userId, user]);
 
   return <>{children}</>;
 }
