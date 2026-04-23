@@ -96,6 +96,26 @@ export async function fetchMe(token: string): Promise<Me> {
   return res.json();
 }
 
+export async function updateMe(
+  token: string,
+  patch: { response_language?: string | null },
+): Promise<Me> {
+  const res = await fetch(`${API_BASE_URL}/api/me`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    const err = new Error(`API ${res.status}`) as Error & { status: number };
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+
 export async function submitQuestion(
   token: string,
   episodeId: string,

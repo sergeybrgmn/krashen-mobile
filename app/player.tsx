@@ -1,6 +1,7 @@
 import { useAuth } from '@clerk/clerk-expo';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -13,17 +14,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AskControls } from '@/components/ask-controls';
 import { AnswerBlock } from '@/components/answer-block';
 import { ErrorModal } from '@/components/error-modal';
+import { LanguageChoiceModal } from '@/components/language-choice-modal';
 import { PlaybackCard } from '@/components/playback-card';
 import { ProfileDrawer } from '@/components/profile-drawer';
 import { ThemedText } from '@/components/themed-text';
 import { TranscriptPanel } from '@/components/transcript-panel';
 import { UserAvatar } from '@/components/user-avatar';
 import { WordExplanationModal } from '@/components/word-explanation-modal';
-import { Colors, Spacing } from '@/constants/theme';
+import { getDeviceLanguageCode } from '@/constants/device-locale';
+import { getLanguageName } from '@/constants/languages';
+import { Colors, Radii, Spacing } from '@/constants/theme';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { useAudioRecorder } from '@/hooks/use-audio-recorder';
 import { useAskQuestion } from '@/hooks/use-ask-question';
 import { useEpisodeData } from '@/hooks/use-episode-data';
+import { useExplanationLanguage } from '@/hooks/use-explanation-language';
 import { useMe } from '@/hooks/use-me';
 import { usePaywall } from '@/hooks/use-paywall';
 import { useWakeLock } from '@/hooks/use-wake-lock';
@@ -37,7 +42,7 @@ import {
 import { posthog } from '@/services/analytics';
 
 export default function PlayerScreen() {
-  const { podcastId, episodeId, targetLanguage } = useLocalSearchParams<{
+  const { podcastId, episodeId, targetLanguage: initialTargetLanguage } = useLocalSearchParams<{
     podcastId: string;
     episodeId: string;
     targetLanguage: string;
@@ -48,15 +53,20 @@ export default function PlayerScreen() {
   const [podcast, setPodcast] = useState<Podcast | null>(null);
   const [episode, setEpisode] = useState<Episode | null>(null);
   const [metaLoading, setMetaLoading] = useState(true);
+  const [targetLanguage, setTargetLanguage] = useState<string | null>(
+    initialTargetLanguage ?? null,
+  );
+  const [explanationPickerVisible, setExplanationPickerVisible] = useState(false);
 
   const player = useAudioPlayer();
   const { segments, explanations, loading: dataLoading } = useEpisodeData(
     episodeId ?? null,
-    targetLanguage ?? null,
+    targetLanguage,
   );
   const recorder = useAudioRecorder();
   const askQuestion = useAskQuestion();
   const { me, refetch: refetchMe } = useMe();
+  const { saveExplanationLanguage } = useExplanationLanguage();
   const presentPaywall = usePaywall();
 
   const [answer, setAnswer] = useState<string | null>(null);
@@ -68,6 +78,12 @@ export default function PlayerScreen() {
   } | null>(null);
 
   useWakeLock(player.isPlaying || recorder.isRecording);
+
+  const deviceLocale = useMemo(() => getDeviceLanguageCode(), []);
+  const responseLanguage = me?.response_language ?? deviceLocale;
+
+  const explanationOptions = episode?.explanation_languages ?? [];
+  const canChangeExplanation = explanationOptions.length > 1;
 
   // Load podcast & episode metadata
   useEffect(() => {
@@ -108,6 +124,15 @@ export default function PlayerScreen() {
     });
   }, [episodeId, targetLanguage]);
 
+  const handleExplanationConfirm = useCallback(
+    async (lang: string) => {
+      await saveExplanationLanguage(lang);
+      setTargetLanguage(lang);
+      setExplanationPickerVisible(false);
+    },
+    [saveExplanationLanguage],
+  );
+
   // Ask flow — gate on subscription/quota before recording.
   const handleAskStart = useCallback(async () => {
     if (!me?.is_subscribed && (me?.questions_left ?? 0) <= 0) {
@@ -135,7 +160,7 @@ export default function PlayerScreen() {
 
   const handleAskSend = useCallback(async () => {
     const uri = await recorder.stop();
-    if (!uri || !episodeId || !targetLanguage) return;
+    if (!uri || !episodeId) return;
 
     try {
       const jwtTemplate = process.env.EXPO_PUBLIC_CLERK_JWT_TEMPLATE;
@@ -148,7 +173,7 @@ export default function PlayerScreen() {
         token,
         episodeId,
         player.position,
-        targetLanguage,
+        responseLanguage,
         uri,
       );
       setAnswer(result.answer);
@@ -185,7 +210,7 @@ export default function PlayerScreen() {
         });
       }
     }
-  }, [recorder, episodeId, targetLanguage, getToken, askQuestion, player.position, presentPaywall, refetchMe]);
+  }, [recorder, episodeId, getToken, askQuestion, player.position, responseLanguage, presentPaywall, refetchMe]);
 
   if (metaLoading) {
     return (
@@ -250,6 +275,22 @@ export default function PlayerScreen() {
           onSend={handleAskSend}
         />
 
+        {/* Explanation language chip — only when the user has a real choice */}
+        {targetLanguage && canChangeExplanation && (
+          <View style={styles.chipRow}>
+            <Pressable
+              style={styles.chip}
+              onPress={() => setExplanationPickerVisible(true)}
+            >
+              <Ionicons name="language-outline" size={14} color={Colors.textSecondary} />
+              <ThemedText style={styles.chipText}>
+                Explanations: {getLanguageName(targetLanguage)}
+              </ThemedText>
+              <Ionicons name="chevron-down" size={14} color={Colors.textSecondary} />
+            </Pressable>
+          </View>
+        )}
+
         {/* Transcript */}
         {(segments.length > 0 || dataLoading) && (
           <TranscriptPanel
@@ -268,8 +309,18 @@ export default function PlayerScreen() {
       {/* Word Explanation Modal */}
       <WordExplanationModal
         word={selectedWord}
-        targetLanguage={targetLanguage}
+        targetLanguage={targetLanguage ?? undefined}
         onClose={() => setSelectedWord(null)}
+      />
+
+      {/* Explanation Language Picker */}
+      <LanguageChoiceModal
+        visible={explanationPickerVisible}
+        title="Choose the language for explanations"
+        options={explanationOptions}
+        initial={targetLanguage}
+        onConfirm={handleExplanationConfirm}
+        onCancel={() => setExplanationPickerVisible(false)}
       />
 
       {/* Error Modal */}
@@ -323,5 +374,22 @@ const styles = StyleSheet.create({
   },
   episodeTitle: {
     marginBottom: Spacing.sm,
+  },
+  chipRow: {
+    flexDirection: 'row',
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radii.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  chipText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
   },
 });

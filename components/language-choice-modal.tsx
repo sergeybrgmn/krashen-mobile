@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { getLanguageName } from '@/constants/languages';
@@ -7,39 +7,66 @@ import { Colors, Radii, Spacing } from '@/constants/theme';
 
 interface Props {
   visible: boolean;
+  title: string;
   options: string[];
+  initial?: string | null;
   onConfirm: (lang: string) => void;
   onCancel: () => void;
 }
 
-export function AnswerLanguageModal({ visible, options, onConfirm, onCancel }: Props) {
-  const [selected, setSelected] = useState(options[0] ?? 'en');
+const SCROLL_THRESHOLD = 8;
+
+export function LanguageChoiceModal({
+  visible,
+  title,
+  options,
+  initial,
+  onConfirm,
+  onCancel,
+}: Props) {
+  const [selected, setSelected] = useState<string>(
+    initial && options.includes(initial) ? initial : options[0] ?? 'en',
+  );
+
+  useEffect(() => {
+    if (visible) {
+      setSelected(initial && options.includes(initial) ? initial : options[0] ?? 'en');
+    }
+  }, [visible, initial, options]);
+
+  const needsScroll = options.length > SCROLL_THRESHOLD;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.overlay}>
         <View style={styles.card}>
           <ThemedText type="subtitle" style={styles.title}>
-            Choose the language for answers:
+            {title}
           </ThemedText>
 
-          <View style={styles.options}>
-            {options.map((code) => (
-              <Pressable
-                key={code}
-                style={[styles.option, selected === code && styles.optionSelected]}
-                onPress={() => setSelected(code)}
-              >
-                <ThemedText
-                  style={[
-                    styles.optionText,
-                    selected === code && styles.optionTextSelected,
-                  ]}
+          <View style={needsScroll ? styles.optionsScrollWrap : undefined}>
+            <ScrollView
+              style={needsScroll ? styles.optionsScroll : undefined}
+              contentContainerStyle={styles.options}
+              showsVerticalScrollIndicator={needsScroll}
+            >
+              {options.map((code) => (
+                <Pressable
+                  key={code}
+                  style={[styles.option, selected === code && styles.optionSelected]}
+                  onPress={() => setSelected(code)}
                 >
-                  {getLanguageName(code)}
-                </ThemedText>
-              </Pressable>
-            ))}
+                  <ThemedText
+                    style={[
+                      styles.optionText,
+                      selected === code && styles.optionTextSelected,
+                    ]}
+                  >
+                    {getLanguageName(code)}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </ScrollView>
           </View>
 
           <View style={styles.buttons}>
@@ -74,9 +101,16 @@ const styles = StyleSheet.create({
   title: {
     marginBottom: Spacing.lg,
   },
+  optionsScrollWrap: {
+    maxHeight: 360,
+    marginBottom: Spacing.md,
+  },
+  optionsScroll: {
+    flexGrow: 0,
+  },
   options: {
     gap: Spacing.sm,
-    marginBottom: Spacing.xl,
+    paddingBottom: Spacing.sm,
   },
   option: {
     paddingHorizontal: Spacing.lg,
@@ -101,6 +135,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: Spacing.md,
+    marginTop: Spacing.lg,
   },
   cancelButton: {
     paddingHorizontal: Spacing.xl,

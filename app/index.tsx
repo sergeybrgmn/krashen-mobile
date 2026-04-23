@@ -10,16 +10,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnswerLanguageModal } from '@/components/answer-language-modal';
 import { EpisodeCard } from '@/components/episode-card';
+import { LanguageChoiceModal } from '@/components/language-choice-modal';
 import { LanguagePicker } from '@/components/language-picker';
 import { PodcastCard } from '@/components/podcast-card';
 import { ProfileDrawer } from '@/components/profile-drawer';
 import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/user-avatar';
-import { getAnswerLanguages } from '@/constants/answer-languages';
 import { Colors, Spacing } from '@/constants/theme';
-import { useAnswerLanguage } from '@/hooks/use-answer-language';
+import { useExplanationLanguage } from '@/hooks/use-explanation-language';
 import { useEpisodes } from '@/hooks/use-episodes';
 import { usePodcasts } from '@/hooks/use-podcasts';
 import { Episode, Podcast } from '@/services/api';
@@ -27,13 +26,17 @@ import { Episode, Podcast } from '@/services/api';
 export default function HomeScreen() {
   const router = useRouter();
   const { podcasts, loading: podcastsLoading, languages } = usePodcasts();
-  const { answerLanguage, loaded: answerLangLoaded, saveAnswerLanguage } = useAnswerLanguage();
+  const {
+    explanationLanguage,
+    loaded: explanationLangLoaded,
+    saveExplanationLanguage,
+  } = useExplanationLanguage();
 
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [selectedPodcast, setSelectedPodcast] = useState<Podcast | null>(null);
   const { episodes, loading: episodesLoading } = useEpisodes(selectedPodcast?.id ?? null);
 
-  const [answerModalVisible, setAnswerModalVisible] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
   const [pendingEpisode, setPendingEpisode] = useState<Episode | null>(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
 
@@ -62,51 +65,59 @@ export default function HomeScreen() {
     setSelectedPodcast(podcast);
   }, []);
 
-  const handleEpisodeTap = useCallback(
-    (episode: Episode) => {
-      if (!selectedPodcast || !answerLangLoaded) return;
-
-      const allowedLangs = getAnswerLanguages(selectedPodcast.language);
-
-      if (answerLanguage && allowedLangs.includes(answerLanguage)) {
-        router.push({
-          pathname: '/player',
-          params: {
-            podcastId: selectedPodcast.id,
-            episodeId: episode.id,
-            targetLanguage: answerLanguage,
-          },
-        });
-      } else {
-        setPendingEpisode(episode);
-        setAnswerModalVisible(true);
-      }
+  const openPlayer = useCallback(
+    (episode: Episode, lang: string) => {
+      if (!selectedPodcast) return;
+      router.push({
+        pathname: '/player',
+        params: {
+          podcastId: selectedPodcast.id,
+          episodeId: episode.id,
+          targetLanguage: lang,
+        },
+      });
     },
-    [selectedPodcast, answerLanguage, answerLangLoaded, router],
+    [selectedPodcast, router],
   );
 
-  const handleAnswerConfirm = useCallback(
+  const handleEpisodeTap = useCallback(
+    (episode: Episode) => {
+      if (!selectedPodcast || !explanationLangLoaded) return;
+
+      const options = episode.explanation_languages ?? [];
+      if (options.length === 0) return;
+
+      // Saved pick works for this episode → go straight in.
+      if (explanationLanguage && options.includes(explanationLanguage)) {
+        openPlayer(episode, explanationLanguage);
+        return;
+      }
+      // Only one option → pick silently, persist for next time.
+      if (options.length === 1) {
+        void saveExplanationLanguage(options[0]);
+        openPlayer(episode, options[0]);
+        return;
+      }
+      // Multiple options and no valid saved pick → ask.
+      setPendingEpisode(episode);
+      setPickerVisible(true);
+    },
+    [selectedPodcast, explanationLanguage, explanationLangLoaded, saveExplanationLanguage, openPlayer],
+  );
+
+  const handlePickerConfirm = useCallback(
     async (lang: string) => {
-      await saveAnswerLanguage(lang);
-      setAnswerModalVisible(false);
-      if (selectedPodcast && pendingEpisode) {
-        router.push({
-          pathname: '/player',
-          params: {
-            podcastId: selectedPodcast.id,
-            episodeId: pendingEpisode.id,
-            targetLanguage: lang,
-          },
-        });
+      await saveExplanationLanguage(lang);
+      setPickerVisible(false);
+      if (pendingEpisode) {
+        openPlayer(pendingEpisode, lang);
       }
       setPendingEpisode(null);
     },
-    [selectedPodcast, pendingEpisode, saveAnswerLanguage, router],
+    [pendingEpisode, saveExplanationLanguage, openPlayer],
   );
 
-  const answerOptions = selectedPodcast
-    ? getAnswerLanguages(selectedPodcast.language)
-    : ['en'];
+  const pickerOptions = pendingEpisode?.explanation_languages ?? [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -185,12 +196,14 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      <AnswerLanguageModal
-        visible={answerModalVisible}
-        options={answerOptions}
-        onConfirm={handleAnswerConfirm}
+      <LanguageChoiceModal
+        visible={pickerVisible}
+        title="Choose the language for explanations"
+        options={pickerOptions}
+        initial={explanationLanguage}
+        onConfirm={handlePickerConfirm}
         onCancel={() => {
-          setAnswerModalVisible(false);
+          setPickerVisible(false);
           setPendingEpisode(null);
         }}
       />

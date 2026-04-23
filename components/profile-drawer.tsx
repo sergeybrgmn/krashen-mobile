@@ -1,6 +1,6 @@
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Dimensions, Pressable, StyleSheet, Switch, View } from 'react-native';
 import Purchases from 'react-native-purchases';
 import Animated, {
@@ -10,10 +10,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LanguageChoiceModal } from '@/components/language-choice-modal';
 import { ThemedText } from '@/components/themed-text';
+import { getDeviceLanguageCode } from '@/constants/device-locale';
+import { LANGUAGES, getLanguageName } from '@/constants/languages';
 import { Colors, Spacing } from '@/constants/theme';
 import { useConsent } from '@/hooks/use-consent';
 import { useMe } from '@/hooks/use-me';
+import { updateMe } from '@/services/api';
 
 const DRAWER_WIDTH = Math.round(Dimensions.get('window').width * 7 / 8);
 const TIMING_CONFIG = { duration: 280 };
@@ -31,11 +35,17 @@ function formatDate(iso: string | null | undefined): string {
 
 export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   const { user } = useUser();
-  const { signOut } = useAuth();
+  const { getToken, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const { me, loading: meLoading, refetch: refetchMe } = useMe(visible);
   const [restoring, setRestoring] = useState(false);
+  const [responseLangPickerVisible, setResponseLangPickerVisible] = useState(false);
+  const [savingResponseLang, setSavingResponseLang] = useState(false);
   const { accepted: analyticsAccepted, update: setAnalyticsConsent } = useConsent();
+
+  const deviceLocale = useMemo(() => getDeviceLanguageCode(), []);
+  const responseLanguage = me?.response_language ?? deviceLocale;
+  const languageOptions = useMemo(() => LANGUAGES.map((l) => l.code), []);
 
   const handleRestore = useCallback(async () => {
     setRestoring(true);
@@ -46,6 +56,23 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
       setRestoring(false);
     }
   }, [refetchMe]);
+
+  const handleResponseLanguageConfirm = useCallback(
+    async (lang: string) => {
+      setResponseLangPickerVisible(false);
+      setSavingResponseLang(true);
+      try {
+        const jwtTemplate = process.env.EXPO_PUBLIC_CLERK_JWT_TEMPLATE;
+        const token = await getToken(jwtTemplate ? { template: jwtTemplate } : undefined);
+        if (!token) return;
+        await updateMe(token, { response_language: lang });
+        await refetchMe();
+      } finally {
+        setSavingResponseLang(false);
+      }
+    },
+    [getToken, refetchMe],
+  );
 
   const translateX = useSharedValue(-DRAWER_WIDTH);
   const backdropOpacity = useSharedValue(0);
@@ -125,6 +152,29 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
         <View style={styles.menuSection}>
           <Pressable
             style={styles.menuItem}
+            onPress={() => setResponseLangPickerVisible(true)}
+            disabled={savingResponseLang}
+          >
+            {savingResponseLang ? (
+              <ActivityIndicator size="small" color={Colors.cyan} />
+            ) : (
+              <Ionicons name="chatbubble-ellipses-outline" size={20} color={Colors.textSecondary} />
+            )}
+            <View style={styles.responseLangRow}>
+              <View style={styles.responseLangLabels}>
+                <ThemedText style={styles.menuItemText}>Response language</ThemedText>
+                <ThemedText type="small" style={styles.responseLangHint}>
+                  Used when you ask questions
+                </ThemedText>
+              </View>
+              <ThemedText style={styles.responseLangValue}>
+                {getLanguageName(responseLanguage)}
+              </ThemedText>
+            </View>
+          </Pressable>
+
+          <Pressable
+            style={styles.menuItem}
             onPress={handleRestore}
             disabled={restoring}
           >
@@ -166,6 +216,15 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
           </Pressable>
         </View>
       </Animated.View>
+
+      <LanguageChoiceModal
+        visible={responseLangPickerVisible}
+        title="Choose the language for answers"
+        options={languageOptions}
+        initial={responseLanguage}
+        onConfirm={handleResponseLanguageConfirm}
+        onCancel={() => setResponseLangPickerVisible(false)}
+      />
     </View>
   );
 }
@@ -262,6 +321,24 @@ const styles = StyleSheet.create({
   analyticsHint: {
     color: Colors.textMuted,
     marginTop: 2,
+  },
+  responseLangRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  responseLangLabels: {
+    flex: 1,
+  },
+  responseLangHint: {
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  responseLangValue: {
+    color: Colors.cyan,
+    fontSize: 15,
   },
   footer: {
     borderTopWidth: StyleSheet.hairlineWidth,
