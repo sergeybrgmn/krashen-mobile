@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -8,10 +8,24 @@ import { Colors, Radii, Sizes, Spacing } from '@/constants/theme';
 interface Props {
   isRecording: boolean;
   isSubmitting: boolean;
+  awaitingConfirmation: boolean;
   disabled: boolean;
+  elapsedMs: number;
+  maxDurationMs: number;
   onStart: () => void;
   onCancel: () => void;
   onSend: () => void;
+  onRedo: () => void;
+  onConfirmSend: () => void;
+}
+
+const AMBER_THRESHOLD_MS = 5_000;
+
+function formatTime(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
 function PulsingDot() {
@@ -41,33 +55,23 @@ function PulsingDot() {
   );
 }
 
-function ListeningDots() {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCount((c) => (c + 1) % 6);
-    }, 220);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <ThemedText style={styles.listeningText}>
-      Listening{"'".repeat(count)}
-    </ThemedText>
-  );
-}
-
 export function AskControls({
   isRecording,
   isSubmitting,
+  awaitingConfirmation,
   disabled,
+  elapsedMs,
+  maxDurationMs,
   onStart,
   onCancel,
   onSend,
+  onRedo,
+  onConfirmSend,
 }: Props) {
   // State 2: Listening
   if (isRecording) {
+    const remaining = Math.max(0, maxDurationMs - elapsedMs);
+    const nearLimit = remaining <= AMBER_THRESHOLD_MS;
     return (
       <View style={styles.listeningBar}>
         <Pressable style={styles.cancelButton} onPress={onCancel}>
@@ -76,10 +80,33 @@ export function AskControls({
 
         <View style={styles.listeningCenter}>
           <PulsingDot />
-          <ListeningDots />
+          <ThemedText style={[styles.timer, nearLimit && styles.timerAmber]}>
+            {formatTime(elapsedMs)} / {formatTime(maxDurationMs)}
+          </ThemedText>
         </View>
 
         <Pressable style={styles.sendButton} onPress={onSend}>
+          <ThemedText style={styles.sendIcon}>↑</ThemedText>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // State 2b: Awaiting confirmation (time's up — send or redo?)
+  if (awaitingConfirmation) {
+    return (
+      <View style={styles.listeningBar}>
+        <Pressable style={styles.redoButton} onPress={onRedo}>
+          <Ionicons name="refresh" size={18} color={Colors.textPrimary} />
+        </Pressable>
+
+        <View style={styles.listeningCenter}>
+          <ThemedText style={styles.readyText}>
+            Time’s up — send or redo?
+          </ThemedText>
+        </View>
+
+        <Pressable style={styles.sendButton} onPress={onConfirmSend}>
           <ThemedText style={styles.sendIcon}>↑</ThemedText>
         </Pressable>
       </View>
@@ -173,6 +200,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: Colors.textPrimary,
   },
+  redoButton: {
+    width: Sizes.cancelButton,
+    height: Sizes.cancelButton,
+    borderRadius: Sizes.cancelButton / 2,
+    backgroundColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   listeningCenter: {
     flex: 1,
     flexDirection: 'row',
@@ -186,7 +221,16 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: Colors.orange,
   },
-  listeningText: {
+  timer: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    fontVariant: ['tabular-nums'],
+  },
+  timerAmber: {
+    color: Colors.orange,
+    fontWeight: '600',
+  },
+  readyText: {
     fontSize: 15,
     color: Colors.textSecondary,
   },

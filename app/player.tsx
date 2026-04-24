@@ -41,6 +41,8 @@ import {
 } from '@/services/api';
 import { posthog } from '@/services/analytics';
 
+const MAX_RECORDING_MS = 20_000;
+
 export default function PlayerScreen() {
   const { podcastId, episodeId, targetLanguage: initialTargetLanguage } = useLocalSearchParams<{
     podcastId: string;
@@ -63,7 +65,13 @@ export default function PlayerScreen() {
     episodeId ?? null,
     targetLanguage,
   );
-  const recorder = useAudioRecorder();
+  const [pendingRecordingUri, setPendingRecordingUri] = useState<string | null>(null);
+  const recorder = useAudioRecorder({
+    maxDurationMs: MAX_RECORDING_MS,
+    onLimitReached: (uri) => {
+      if (uri) setPendingRecordingUri(uri);
+    },
+  });
   const askQuestion = useAskQuestion();
   const { me, refetch: refetchMe } = useMe();
   const { saveExplanationLanguage } = useExplanationLanguage();
@@ -158,10 +166,8 @@ export default function PlayerScreen() {
     recorder.cancel();
   }, [recorder]);
 
-  const handleAskSend = useCallback(async () => {
-    const uri = await recorder.stop();
-    if (!uri || !episodeId) return;
-
+  const submitRecording = useCallback(async (uri: string) => {
+    if (!episodeId) return;
     try {
       const jwtTemplate = process.env.EXPO_PUBLIC_CLERK_JWT_TEMPLATE;
       const token = await getToken(jwtTemplate ? { template: jwtTemplate } : undefined);
@@ -210,7 +216,25 @@ export default function PlayerScreen() {
         });
       }
     }
-  }, [recorder, episodeId, getToken, askQuestion, player.position, responseLanguage, presentPaywall, refetchMe]);
+  }, [episodeId, getToken, askQuestion, player.position, responseLanguage, presentPaywall, refetchMe]);
+
+  const handleAskSend = useCallback(async () => {
+    const uri = await recorder.stop();
+    if (!uri) return;
+    await submitRecording(uri);
+  }, [recorder, submitRecording]);
+
+  const handleConfirmSend = useCallback(async () => {
+    if (!pendingRecordingUri) return;
+    const uri = pendingRecordingUri;
+    setPendingRecordingUri(null);
+    await submitRecording(uri);
+  }, [pendingRecordingUri, submitRecording]);
+
+  const handleRedo = useCallback(async () => {
+    setPendingRecordingUri(null);
+    await handleAskStart();
+  }, [handleAskStart]);
 
   if (metaLoading) {
     return (
@@ -269,10 +293,15 @@ export default function PlayerScreen() {
         <AskControls
           isRecording={recorder.isRecording}
           isSubmitting={askQuestion.isSubmitting}
+          awaitingConfirmation={!!pendingRecordingUri}
           disabled={!episodeId}
+          elapsedMs={recorder.elapsedMs}
+          maxDurationMs={MAX_RECORDING_MS}
           onStart={handleAskStart}
           onCancel={handleAskCancel}
           onSend={handleAskSend}
+          onRedo={handleRedo}
+          onConfirmSend={handleConfirmSend}
         />
 
         {/* Explanation language chip — only when the user has a real choice */}
