@@ -13,7 +13,7 @@ export function usePaywall() {
   const presentPaywall = useCallback(async (): Promise<boolean> => {
     posthog?.capture('paywall_shown');
 
-    const result = await RevenueCatUI.presentPaywall({
+    const result = await RevenueCatUI.presentPaywallIfNeeded({
       requiredEntitlementIdentifier: 'pro',
     });
     const purchased =

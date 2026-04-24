@@ -118,7 +118,7 @@ export default function PlayerScreen() {
   const handleWordPress = useCallback((word: WordExplanation) => {
     setSelectedWord(word);
     posthog?.capture('word_tapped', {
-      word: word?.text,
+      word: word.surface,
       episode_id: episodeId,
       target_language: targetLanguage,
     });
