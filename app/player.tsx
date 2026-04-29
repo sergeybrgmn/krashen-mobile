@@ -61,7 +61,7 @@ export default function PlayerScreen() {
   const [explanationPickerVisible, setExplanationPickerVisible] = useState(false);
 
   const player = useAudioPlayer();
-  const { segments, explanations, loading: dataLoading } = useEpisodeData(
+  const { segments, explanations, loading: dataLoading, proRequired, refetch: refetchEpisodeData } = useEpisodeData(
     episodeId ?? null,
     targetLanguage,
   );
@@ -99,29 +99,57 @@ export default function PlayerScreen() {
     let cancelled = false;
     setMetaLoading(true);
 
-    Promise.all([fetchPodcasts(), fetchEpisodes(podcastId)]).then(
-      ([podcasts, episodes]) => {
-        if (cancelled) return;
-        setPodcast(podcasts.find((p) => p.id === podcastId) ?? null);
-        const ep = episodes.find((e) => e.id === episodeId) ?? null;
-        setEpisode(ep);
-        setMetaLoading(false);
-        if (ep?.audio_url) {
-          player.load(ep.audio_url);
-          posthog?.capture('episode_started', {
-            episode_id: episodeId,
-            podcast_id: podcastId,
-            target_language: targetLanguage,
-          });
-        }
-      },
-    );
+    (async () => {
+      const jwtTemplate = process.env.EXPO_PUBLIC_CLERK_JWT_TEMPLATE;
+      const token = await getToken(jwtTemplate ? { template: jwtTemplate } : undefined);
+      if (!token) {
+        if (!cancelled) setMetaLoading(false);
+        return;
+      }
+      const [podcasts, episodes] = await Promise.all([
+        fetchPodcasts(token),
+        fetchEpisodes(token, podcastId),
+      ]);
+      if (cancelled) return;
+      setPodcast(podcasts.find((p) => p.id === podcastId) ?? null);
+      const ep = episodes.find((e) => e.id === episodeId) ?? null;
+      setEpisode(ep);
+      setMetaLoading(false);
+      if (ep?.audio_url) {
+        player.load(ep.audio_url);
+        posthog?.capture('episode_started', {
+          episode_id: episodeId,
+          podcast_id: podcastId,
+          target_language: targetLanguage,
+        });
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [podcastId, episodeId]);
+
+  // Pro-required episode: present paywall. On purchase, refresh /me so future
+  // fetches see the new subscription state, and retry the data fetch.
+  useEffect(() => {
+    if (!proRequired) return;
+    let cancelled = false;
+    (async () => {
+      const purchased = await presentPaywall();
+      if (cancelled) return;
+      if (purchased) {
+        await refetchMe();
+        refetchEpisodeData();
+      } else {
+        router.back();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [proRequired, presentPaywall, refetchMe, refetchEpisodeData, router]);
 
   const handleWordPress = useCallback((word: WordExplanation) => {
     setSelectedWord(word);

@@ -20,12 +20,15 @@ import { UserAvatar } from '@/components/user-avatar';
 import { Colors, Spacing } from '@/constants/theme';
 import { useExplanationLanguage } from '@/hooks/use-explanation-language';
 import { useEpisodes } from '@/hooks/use-episodes';
+import { useMe } from '@/hooks/use-me';
 import { usePodcasts } from '@/hooks/use-podcasts';
 import { Episode, Podcast } from '@/services/api';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { podcasts, loading: podcastsLoading, languages } = usePodcasts();
+  const { me } = useMe();
+  const showProBadge = !me?.is_subscribed;
   const {
     explanationLanguage,
     loaded: explanationLangLoaded,
@@ -187,6 +190,7 @@ export default function HomeScreen() {
                   <EpisodeCard
                     key={ep.id}
                     episode={ep}
+                    showProBadge={showProBadge}
                     onPress={() => handleEpisodeTap(ep)}
                   />
                 ))}

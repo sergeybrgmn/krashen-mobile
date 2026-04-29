@@ -15,6 +15,7 @@ export interface Episode {
   published_at: string | null;
   duration: number | null;
   explanation_languages: string[];
+  is_free: boolean;
 }
 
 export interface Segment {
@@ -57,30 +58,47 @@ export interface Me {
   created_at: string;
 }
 
+export type ApiError = Error & {
+  status: number;
+  detail?: { code?: string; message?: string; reset_at?: string };
+};
+
 async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, init);
   if (!res.ok) {
-    const err = new Error(`API ${res.status}`) as Error & { status: number };
+    const err = new Error(`API ${res.status}`) as ApiError;
     err.status = res.status;
+    if (res.status === 403) {
+      try {
+        const body = await res.json();
+        err.detail = body.detail;
+      } catch { /* ignore parse errors */ }
+    }
     throw err;
   }
   return res.json();
 }
 
-export function fetchPodcasts(): Promise<Podcast[]> {
-  return fetchJSON('/api/podcasts');
+function authHeaders(token: string): HeadersInit {
+  return { Authorization: `Bearer ${token}` };
 }
 
-export function fetchEpisodes(podcastId: string): Promise<Episode[]> {
-  return fetchJSON(`/api/podcast/${podcastId}/episodes`);
+export function fetchPodcasts(token: string): Promise<Podcast[]> {
+  return fetchJSON('/api/podcasts', { headers: authHeaders(token) });
+}
+
+export function fetchEpisodes(token: string, podcastId: string): Promise<Episode[]> {
+  return fetchJSON(`/api/podcast/${podcastId}/episodes`, { headers: authHeaders(token) });
 }
 
 export function fetchEpisodeData(
+  token: string,
   episodeId: string,
   targetLanguage: string,
 ): Promise<EpisodeData> {
   return fetchJSON(
     `/api/episode/${episodeId}/data?target_language=${encodeURIComponent(targetLanguage)}`,
+    { headers: authHeaders(token) },
   );
 }
 

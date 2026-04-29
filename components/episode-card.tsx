@@ -24,10 +24,13 @@ function formatDate(iso: string): string {
 interface Props {
   episode: Episode;
   onPress: () => void;
+  /** When true, show a "PRO" badge on episodes the user can't access without upgrading. */
+  showProBadge?: boolean;
 }
 
-export function EpisodeCard({ episode, onPress }: Props) {
+export function EpisodeCard({ episode, onPress, showProBadge = false }: Props) {
   const hasMeta = episode.published_at || episode.duration != null;
+  const isProLocked = showProBadge && !episode.is_free;
 
   return (
     <Pressable
@@ -57,6 +60,11 @@ export function EpisodeCard({ episode, onPress }: Props) {
       )}
 
       <View style={styles.badgeRow}>
+        {isProLocked && (
+          <View style={styles.proBadge}>
+            <ThemedText style={styles.proBadgeText}>PRO</ThemedText>
+          </View>
+        )}
         {episode.explanation_languages.map((lang) => (
           <View key={lang} style={styles.badge}>
             <ThemedText style={styles.badgeText}>
@@ -118,5 +126,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.cyan,
     fontWeight: '600',
+  },
+  proBadge: {
+    borderRadius: Radii.sm,
+    backgroundColor: Colors.orange,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  proBadgeText: {
+    fontSize: 11,
+    color: '#0a0a0a',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });
