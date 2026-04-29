@@ -1,3 +1,4 @@
+import { useAuth } from '@clerk/clerk-expo';
 import { useEffect, useMemo, useState } from 'react';
 
 import { fetchPodcasts, Podcast } from '@/services/api';
@@ -8,8 +9,10 @@ export function usePodcasts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const getToken = useAuthToken();
+  const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
     let cancelled = false;
     setLoading(true);
     (async () => {
@@ -27,7 +30,7 @@ export function usePodcasts() {
     return () => {
       cancelled = true;
     };
-  }, [getToken]);
+  }, [getToken, isLoaded, isSignedIn]);
 
   const languages = useMemo(() => {
     const codes = new Set(podcasts.map((p) => p.language.toLowerCase()));

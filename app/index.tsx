@@ -21,13 +21,15 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useExplanationLanguage } from '@/hooks/use-explanation-language';
 import { useEpisodes } from '@/hooks/use-episodes';
 import { useMe } from '@/hooks/use-me';
+import { usePaywall } from '@/hooks/use-paywall';
 import { usePodcasts } from '@/hooks/use-podcasts';
 import { Episode, Podcast } from '@/services/api';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { podcasts, loading: podcastsLoading, languages } = usePodcasts();
-  const { me } = useMe();
+  const { me, refetch: refetchMe } = useMe();
+  const presentPaywall = usePaywall();
   const showProBadge = !me?.is_subscribed;
   const {
     explanationLanguage,
@@ -84,11 +86,24 @@ export default function HomeScreen() {
   );
 
   const handleEpisodeTap = useCallback(
-    (episode: Episode) => {
+    async (episode: Episode) => {
       if (!selectedPodcast || !explanationLangLoaded) return;
 
+      // Gate PRO-locked episodes upfront so unprocessed-but-valuable episodes
+      // (transcript only, no explanations) still surface the paywall.
+      if (!episode.is_free && !me?.is_subscribed) {
+        const purchased = await presentPaywall();
+        if (!purchased) return;
+        await refetchMe();
+      }
+
       const options = episode.explanation_languages ?? [];
-      if (options.length === 0) return;
+
+      // No explanations yet — open the player anyway; user can still ask questions.
+      if (options.length === 0) {
+        openPlayer(episode, '');
+        return;
+      }
 
       // Saved pick works for this episode → go straight in.
       if (explanationLanguage && options.includes(explanationLanguage)) {
@@ -105,7 +120,7 @@ export default function HomeScreen() {
       setPendingEpisode(episode);
       setPickerVisible(true);
     },
-    [selectedPodcast, explanationLanguage, explanationLangLoaded, saveExplanationLanguage, openPlayer],
+    [selectedPodcast, explanationLanguage, explanationLangLoaded, saveExplanationLanguage, openPlayer, me, presentPaywall, refetchMe],
   );
 
   const handlePickerConfirm = useCallback(

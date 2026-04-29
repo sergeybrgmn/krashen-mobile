@@ -1,3 +1,4 @@
+import { useAuth } from '@clerk/clerk-expo';
 import { useEffect, useState } from 'react';
 
 import { Episode, fetchEpisodes } from '@/services/api';
@@ -8,12 +9,14 @@ export function useEpisodes(podcastId: string | null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const getToken = useAuthToken();
+  const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
     if (!podcastId) {
       setEpisodes([]);
       return;
     }
+    if (!isLoaded || !isSignedIn) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -32,7 +35,7 @@ export function useEpisodes(podcastId: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [podcastId, getToken]);
+  }, [podcastId, getToken, isLoaded, isSignedIn]);
 
   return { episodes, loading, error };
 }

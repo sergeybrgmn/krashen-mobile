@@ -1,3 +1,4 @@
+import { useAuth } from '@clerk/clerk-expo';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -20,14 +21,16 @@ export function useEpisodeData(episodeId: string | null, targetLanguage: string 
   // Bumping this re-triggers the fetch effect; used to retry after a paywall purchase.
   const [retryNonce, setRetryNonce] = useState(0);
   const getToken = useAuthToken();
+  const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
-    if (!episodeId || !targetLanguage) {
+    if (!episodeId) {
       setSegments([]);
       setExplanations({});
       setProRequired(false);
       return;
     }
+    if (!isLoaded || !isSignedIn) return;
 
     let cancelled = false;
     setLoading(true);
@@ -38,7 +41,9 @@ export function useEpisodeData(episodeId: string | null, targetLanguage: string 
       try {
         const token = await getToken();
         if (!token) throw new Error('Not signed in');
-        const data = await fetchEpisodeData(token, episodeId, targetLanguage);
+        // No target language → backend returns segments only (null explanations);
+        // the raw transcript still has value during playback.
+        const data = await fetchEpisodeData(token, episodeId, targetLanguage ?? '');
         if (cancelled) return;
         setSegments(data.segments ?? []);
         setExplanations(data.explanations ?? {});
@@ -58,7 +63,7 @@ export function useEpisodeData(episodeId: string | null, targetLanguage: string 
     return () => {
       cancelled = true;
     };
-  }, [episodeId, targetLanguage, getToken, retryNonce]);
+  }, [episodeId, targetLanguage, getToken, retryNonce, isLoaded, isSignedIn]);
 
   const refetch = useCallback(() => setRetryNonce((n) => n + 1), []);
 
