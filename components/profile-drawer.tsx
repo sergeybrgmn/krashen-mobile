@@ -37,7 +37,12 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   const { user } = useUser();
   const { getToken, signOut } = useAuth();
   const insets = useSafeAreaInsets();
-  const { me, loading: meLoading, refetch: refetchMe } = useMe(visible);
+  const { me, loading: meLoading, refetch: refetchMe } = useMe();
+
+  // Freshen quota/subscription state whenever the user opens the drawer.
+  useEffect(() => {
+    if (visible) void refetchMe();
+  }, [visible, refetchMe]);
   const [restoring, setRestoring] = useState(false);
   const [responseLangPickerVisible, setResponseLangPickerVisible] = useState(false);
   const [savingResponseLang, setSavingResponseLang] = useState(false);

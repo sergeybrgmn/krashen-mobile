@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import 'react-native-reanimated';
 
+import { MeProvider } from '@/hooks/use-me';
 import { tokenCache } from '@/services/auth';
 import { configurePurchases, identifyUser, resetUser } from '@/services/purchases';
 import { configureAnalytics, identifyAnalyticsUser, resetAnalyticsUser } from '@/services/analytics';
@@ -76,24 +77,26 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   return (
     <ClerkProvider publishableKey={CLERK_KEY} tokenCache={tokenCache}>
-      <ThemeProvider value={DarkTheme}>
-        <AuthGate>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: '#000000' },
-            }}
-          >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="player" />
-            <Stack.Screen name="about" />
-            <Stack.Screen name="privacy" />
-            <Stack.Screen name="terms" />
-            <Stack.Screen name="sign-in" />
-          </Stack>
-        </AuthGate>
-        <StatusBar style="light" />
-      </ThemeProvider>
+      <MeProvider>
+        <ThemeProvider value={DarkTheme}>
+          <AuthGate>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: '#000000' },
+              }}
+            >
+              <Stack.Screen name="index" />
+              <Stack.Screen name="player" />
+              <Stack.Screen name="about" />
+              <Stack.Screen name="privacy" />
+              <Stack.Screen name="terms" />
+              <Stack.Screen name="sign-in" />
+            </Stack>
+          </AuthGate>
+          <StatusBar style="light" />
+        </ThemeProvider>
+      </MeProvider>
     </ClerkProvider>
   );
 }
