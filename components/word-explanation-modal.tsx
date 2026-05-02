@@ -11,7 +11,7 @@ interface Props {
   onClose: () => void;
 }
 
-function Field({ label, value, italic }: { label: string; value: string; italic?: boolean }) {
+function Field({ label, value, italic }: { label: string; value: string | null; italic?: boolean }) {
   if (!value) return null;
   return (
     <View style={styles.field}>

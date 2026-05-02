@@ -28,13 +28,13 @@ export interface WordExplanation {
   surface: string;
   start_char: number;
   end_char: number;
-  translation: string;
+  translation: string | null;
   pos: string;
   lemma?: string;
   meaning: string;
-  pattern: string;
-  usage_notes: string;
-  example: string;
+  pattern: string | null;
+  usage_notes: string | null;
+  example: string | null;
 }
 
 export interface EpisodeData {
