@@ -46,6 +46,7 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   const [restoring, setRestoring] = useState(false);
   const [responseLangPickerVisible, setResponseLangPickerVisible] = useState(false);
   const [savingResponseLang, setSavingResponseLang] = useState(false);
+  const [savingFluent, setSavingFluent] = useState(false);
   const { accepted: analyticsAccepted, update: setAnalyticsConsent } = useConsent();
 
   const deviceLocale = useMemo(() => getDeviceLanguageCode(), []);
@@ -74,6 +75,22 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
         await refetchMe();
       } finally {
         setSavingResponseLang(false);
+      }
+    },
+    [getToken, refetchMe],
+  );
+
+  const handleFluentToggle = useCallback(
+    async (next: boolean) => {
+      setSavingFluent(true);
+      try {
+        const jwtTemplate = process.env.EXPO_PUBLIC_CLERK_JWT_TEMPLATE;
+        const token = await getToken(jwtTemplate ? { template: jwtTemplate } : undefined);
+        if (!token) return;
+        await updateMe(token, { fluent_mode: next });
+        await refetchMe();
+      } finally {
+        setSavingFluent(false);
       }
     },
     [getToken, refetchMe],
@@ -177,6 +194,29 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
               </ThemedText>
             </View>
           </Pressable>
+
+          <View style={styles.menuItem}>
+            {savingFluent ? (
+              <ActivityIndicator size="small" color={Colors.cyan} />
+            ) : (
+              <Ionicons name="sparkles-outline" size={20} color={Colors.textSecondary} />
+            )}
+            <View style={styles.fluentRow}>
+              <View style={styles.fluentLabels}>
+                <ThemedText style={styles.menuItemText}>Fluent mode</ThemedText>
+                <ThemedText type="small" style={styles.fluentHint}>
+                  Substantive answers for experienced listeners. May take longer.
+                </ThemedText>
+              </View>
+              <Switch
+                value={me?.fluent_mode ?? false}
+                onValueChange={handleFluentToggle}
+                disabled={savingFluent || !me}
+                trackColor={{ false: Colors.border, true: Colors.cyan }}
+                thumbColor={Colors.white}
+              />
+            </View>
+          </View>
 
           <Pressable
             style={styles.menuItem}
@@ -344,6 +384,20 @@ const styles = StyleSheet.create({
   responseLangValue: {
     color: Colors.cyan,
     fontSize: 15,
+  },
+  fluentRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  fluentLabels: {
+    flex: 1,
+  },
+  fluentHint: {
+    color: Colors.textMuted,
+    marginTop: 2,
   },
   footer: {
     borderTopWidth: StyleSheet.hairlineWidth,

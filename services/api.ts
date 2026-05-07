@@ -51,6 +51,7 @@ export interface Me {
   name: string | null;
   email: string | null;
   response_language: string | null;
+  fluent_mode: boolean;
   questions_left: number;
   is_subscribed: boolean;
   subscription_status: string | null;
@@ -116,7 +117,7 @@ export async function fetchMe(token: string): Promise<Me> {
 
 export async function updateMe(
   token: string,
-  patch: { response_language?: string | null },
+  patch: { response_language?: string | null; fluent_mode?: boolean },
 ): Promise<Me> {
   const res = await fetch(`${API_BASE_URL}/api/me`, {
     method: 'PATCH',
