@@ -218,15 +218,15 @@ export default function PlayerScreen() {
       const detail = (e as { detail?: { code?: string; message?: string; reset_at?: string } }).detail;
       if (status === 401) {
         setErrorModal({ message: 'Unauthorized. Please sign in.', isAuth: true });
-      } else if (status === 403 && detail?.code === 'pro_monthly_limit_reached') {
-        // Pro user hit the monthly cap. Show informational message with reset date.
+      } else if (status === 403 && detail?.code === 'pro_weekly_limit_reached') {
+        // Pro user hit the weekly cap. Show informational message with reset date.
         const resetDate = detail.reset_at
           ? new Date(detail.reset_at).toLocaleDateString(undefined, {
               month: 'short', day: 'numeric',
             })
           : '';
         setErrorModal({
-          message: `Monthly question limit reached.${resetDate ? ` Resets ${resetDate}.` : ''}`,
+          message: `Weekly question limit reached.${resetDate ? ` Resets ${resetDate}.` : ''}`,
           isAuth: false,
         });
       } else if (status === 403) {

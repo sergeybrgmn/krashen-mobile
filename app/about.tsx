@@ -31,7 +31,7 @@ Preparing each podcast for interactive dialogue has a cost. We're focused on pro
 
 ### Can I add my favorite podcast or episode?
 
-Yes, we plan to offer all users a monthly quota to add their own podcasts.
+Yes, we plan to offer all users a quota to add their own podcasts.
 
 ### Why "Krashen"?
 
