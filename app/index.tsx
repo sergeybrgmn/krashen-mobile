@@ -1,9 +1,10 @@
-import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -27,7 +28,12 @@ import { Episode, Podcast } from '@/services/api';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { podcasts, loading: podcastsLoading, languages } = usePodcasts();
+  const {
+    podcasts,
+    loading: podcastsLoading,
+    languages,
+    refetch: refetchPodcasts,
+  } = usePodcasts();
   const { me, refetch: refetchMe } = useMe();
   const presentPaywall = usePaywall();
   const showProBadge = !me?.is_subscribed;
@@ -39,7 +45,31 @@ export default function HomeScreen() {
 
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [selectedPodcast, setSelectedPodcast] = useState<Podcast | null>(null);
-  const { episodes, loading: episodesLoading } = useEpisodes(selectedPodcast?.id ?? null);
+  const {
+    episodes,
+    loading: episodesLoading,
+    refetch: refetchEpisodes,
+  } = useEpisodes(selectedPodcast?.id ?? null);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([refetchPodcasts(), refetchEpisodes()]);
+    setRefreshing(false);
+  }, [refetchPodcasts, refetchEpisodes]);
+
+  // Skip the first focus — initial mount already fetched.
+  const isFirstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (isFirstFocus.current) {
+        isFirstFocus.current = false;
+        return;
+      }
+      void refetchPodcasts();
+      void refetchEpisodes();
+    }, [refetchPodcasts, refetchEpisodes]),
+  );
 
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pendingEpisode, setPendingEpisode] = useState<Episode | null>(null);
@@ -143,6 +173,13 @@ export default function HomeScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={Colors.cyan}
+          />
+        }
       >
         <View style={styles.headerRow}>
           <UserAvatar onPress={() => setDrawerVisible(true)} />

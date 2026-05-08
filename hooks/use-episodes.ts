@@ -1,5 +1,5 @@
 import { useAuth } from '@clerk/clerk-expo';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { Episode, fetchEpisodes } from '@/services/api';
 import { useAuthToken } from '@/hooks/use-auth-token';
@@ -10,6 +10,19 @@ export function useEpisodes(podcastId: string | null) {
   const [error, setError] = useState<string | null>(null);
   const getToken = useAuthToken();
   const { isLoaded, isSignedIn } = useAuth();
+
+  const refetch = useCallback(async () => {
+    if (!podcastId || !isLoaded || !isSignedIn) return;
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('Not signed in');
+      const data = await fetchEpisodes(token, podcastId);
+      setEpisodes(data);
+      setError(null);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }, [podcastId, getToken, isLoaded, isSignedIn]);
 
   useEffect(() => {
     if (!podcastId) {
@@ -37,5 +50,5 @@ export function useEpisodes(podcastId: string | null) {
     };
   }, [podcastId, getToken, isLoaded, isSignedIn]);
 
-  return { episodes, loading, error };
+  return { episodes, loading, error, refetch };
 }
