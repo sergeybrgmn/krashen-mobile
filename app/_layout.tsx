@@ -1,9 +1,11 @@
 import { ClerkProvider, useAuth, useUser } from '@clerk/clerk-expo';
+import { enUS, esES } from '@clerk/localizations';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import 'react-native-reanimated';
 
 import { MeProvider } from '@/hooks/use-me';
@@ -75,9 +77,21 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+const CLERK_LOCALIZATIONS = { en: enUS, es: esES } as const;
+
 export default function RootLayout() {
+  const { i18n } = useTranslation();
+  const localization = useMemo(
+    () => CLERK_LOCALIZATIONS[i18n.language as keyof typeof CLERK_LOCALIZATIONS] ?? enUS,
+    [i18n.language],
+  );
+
   return (
-    <ClerkProvider publishableKey={CLERK_KEY} tokenCache={tokenCache}>
+    <ClerkProvider
+      publishableKey={CLERK_KEY}
+      tokenCache={tokenCache}
+      localization={localization}
+    >
       <MeProvider>
         <ThemeProvider value={DarkTheme}>
           <AuthGate>
