@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -24,6 +25,7 @@ function Field({ label, value, italic }: { label: string; value: string | null; 
 }
 
 export function WordExplanationModal({ word, targetLanguage, onClose }: Props) {
+  const { t } = useTranslation();
   const posLabel = word ? getPosLabel(word.pos, targetLanguage ?? 'en') : null;
   const posColor = word ? getPosColor(word.pos) : '#94a3b8';
 
@@ -58,11 +60,11 @@ export function WordExplanationModal({ word, targetLanguage, onClose }: Props) {
               </View>
 
               <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-                <Field label="Translation" value={word.translation} />
-                <Field label="Meaning" value={word.meaning} />
-                <Field label="Pattern" value={word.pattern} />
-                <Field label="Usage notes" value={word.usage_notes} />
-                <Field label="Example" value={word.example} italic />
+                <Field label={t('wordModal.translation')} value={word.translation} />
+                <Field label={t('wordModal.meaning')} value={word.meaning} />
+                <Field label={t('wordModal.pattern')} value={word.pattern} />
+                <Field label={t('wordModal.usageNotes')} value={word.usage_notes} />
+                <Field label={t('wordModal.example')} value={word.example} italic />
               </ScrollView>
             </>
           )}

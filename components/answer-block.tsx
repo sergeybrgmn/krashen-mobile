@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -8,9 +9,10 @@ interface Props {
 }
 
 export function AnswerBlock({ answer }: Props) {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
-      <ThemedText style={styles.label}>Answer:</ThemedText>
+      <ThemedText style={styles.label}>{t('answer.label')}</ThemedText>
       <ThemedText style={styles.text}>{answer}</ThemedText>
     </View>
   );

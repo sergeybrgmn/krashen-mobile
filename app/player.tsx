@@ -2,6 +2,7 @@ import { useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Pressable,
@@ -51,6 +52,7 @@ export default function PlayerScreen() {
   }>();
   const router = useRouter();
   const { getToken } = useAuth();
+  const { t, i18n } = useTranslation();
 
   const [podcast, setPodcast] = useState<Podcast | null>(null);
   const [episode, setEpisode] = useState<Episode | null>(null);
@@ -184,11 +186,11 @@ export default function PlayerScreen() {
       await recorder.start();
     } catch {
       setErrorModal({
-        message: 'Microphone permission denied or unavailable.',
+        message: t('errors.micPermission'),
         isAuth: false,
       });
     }
-  }, [me, player, recorder, presentPaywall, refetchMe]);
+  }, [me, player, recorder, presentPaywall, refetchMe, t]);
 
   const handleAskCancel = useCallback(() => {
     recorder.cancel();
@@ -200,7 +202,7 @@ export default function PlayerScreen() {
       const jwtTemplate = process.env.EXPO_PUBLIC_CLERK_JWT_TEMPLATE;
       const token = await getToken(jwtTemplate ? { template: jwtTemplate } : undefined);
       if (!token) {
-        setErrorModal({ message: 'Unauthorized. Please sign in.', isAuth: true });
+        setErrorModal({ message: t('errors.unauthorized'), isAuth: true });
         return;
       }
       const result = await askQuestion.submit(
@@ -217,16 +219,18 @@ export default function PlayerScreen() {
       const status = (e as { status?: number }).status;
       const detail = (e as { detail?: { code?: string; message?: string; reset_at?: string } }).detail;
       if (status === 401) {
-        setErrorModal({ message: 'Unauthorized. Please sign in.', isAuth: true });
+        setErrorModal({ message: t('errors.unauthorized'), isAuth: true });
       } else if (status === 403 && detail?.code === 'pro_weekly_limit_reached') {
         // Pro user hit the weekly cap. Show informational message with reset date.
         const resetDate = detail.reset_at
-          ? new Date(detail.reset_at).toLocaleDateString(undefined, {
+          ? new Date(detail.reset_at).toLocaleDateString(i18n.language, {
               month: 'short', day: 'numeric',
             })
           : '';
         setErrorModal({
-          message: `Weekly question limit reached.${resetDate ? ` Resets ${resetDate}.` : ''}`,
+          message: resetDate
+            ? t('errors.weeklyLimitResets', { date: resetDate })
+            : t('errors.weeklyLimit'),
           isAuth: false,
         });
       } else if (status === 403) {
@@ -236,15 +240,15 @@ export default function PlayerScreen() {
           await refetchMe();
         }
       } else if (status) {
-        setErrorModal({ message: `Request failed (${status}).`, isAuth: false });
+        setErrorModal({ message: t('errors.requestFailed', { status }), isAuth: false });
       } else {
         setErrorModal({
-          message: 'Network error while sending question.',
+          message: t('errors.network'),
           isAuth: false,
         });
       }
     }
-  }, [episodeId, getToken, askQuestion, player.position, responseLanguage, presentPaywall, refetchMe]);
+  }, [episodeId, getToken, askQuestion, player.position, responseLanguage, presentPaywall, refetchMe, t, i18n.language]);
 
   const handleAskSend = useCallback(async () => {
     const uri = await recorder.stop();
@@ -284,7 +288,7 @@ export default function PlayerScreen() {
           <UserAvatar onPress={() => setDrawerVisible(true)} />
           <Pressable onPress={() => router.back()}>
             <ThemedText type="link" style={styles.backLink}>
-              ← Back to episodes
+              {t('player.backToEpisodes')}
             </ThemedText>
           </Pressable>
         </View>
@@ -341,7 +345,7 @@ export default function PlayerScreen() {
             >
               <Ionicons name="language-outline" size={14} color={Colors.textSecondary} />
               <ThemedText style={styles.chipText}>
-                Explanations: {getLanguageName(targetLanguage)}
+                {t('player.explanationsChip', { language: getLanguageName(targetLanguage) })}
               </ThemedText>
               <Ionicons name="chevron-down" size={14} color={Colors.textSecondary} />
             </Pressable>
@@ -373,7 +377,7 @@ export default function PlayerScreen() {
       {/* Explanation Language Picker */}
       <LanguageChoiceModal
         visible={explanationPickerVisible}
-        title="Choose the language for explanations"
+        title={t('languagePicker.chooseExplanations')}
         options={explanationOptions}
         initial={targetLanguage}
         onConfirm={handleExplanationConfirm}

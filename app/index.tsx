@@ -1,5 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   FlatList,
@@ -28,6 +29,7 @@ import { Episode, Podcast } from '@/services/api';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const {
     podcasts,
     loading: podcastsLoading,
@@ -185,13 +187,13 @@ export default function HomeScreen() {
           <UserAvatar onPress={() => setDrawerVisible(true)} />
           <Pressable onPress={() => router.push('/about')}>
             <ThemedText type="link" style={styles.infoBanner}>
-              What is Krashen?
+              {t('home.infoBanner')}
             </ThemedText>
           </Pressable>
         </View>
 
         <ThemedText type="title" style={styles.pageTitle}>
-          Podcasts
+          {t('home.title')}
         </ThemedText>
 
         <LanguagePicker
@@ -226,16 +228,16 @@ export default function HomeScreen() {
         <View style={styles.episodeSection}>
           {!selectedPodcast ? (
             <ThemedText type="small">
-              Select a podcast to see episodes.
+              {t('home.selectPodcast')}
             </ThemedText>
           ) : episodesLoading ? (
-            <ThemedText type="small">Loading episodes...</ThemedText>
+            <ThemedText type="small">{t('home.loadingEpisodes')}</ThemedText>
           ) : episodes.length === 0 ? (
-            <ThemedText type="small">No episodes</ThemedText>
+            <ThemedText type="small">{t('home.noEpisodes')}</ThemedText>
           ) : (
             <>
               <ThemedText type="subtitle" style={styles.episodeHeader}>
-                {episodes.length} episode{episodes.length !== 1 ? 's' : ''}
+                {t('home.episodeCount', { count: episodes.length })}
               </ThemedText>
               <View style={styles.episodeList}>
                 {episodes.map((ep) => (
@@ -254,7 +256,7 @@ export default function HomeScreen() {
 
       <LanguageChoiceModal
         visible={pickerVisible}
-        title="Choose the language for explanations"
+        title={t('languagePicker.chooseExplanations')}
         options={pickerOptions}
         initial={explanationLanguage}
         onConfirm={handlePickerConfirm}

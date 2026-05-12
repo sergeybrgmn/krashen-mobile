@@ -1,0 +1,104 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "ok": "OK",
+    "back": "Atrás",
+    "loading": "Cargando...",
+    "signIn": "Iniciar sesión"
+  },
+  "home": {
+    "infoBanner": "¿Qué es Krashen?",
+    "title": "Podcasts",
+    "allLanguages": "Todos los idiomas",
+    "selectPodcast": "Selecciona un podcast para ver los episodios.",
+    "loadingEpisodes": "Cargando episodios...",
+    "noEpisodes": "Sin episodios",
+    "episodeCount_one": "{{count}} episodio",
+    "episodeCount_other": "{{count}} episodios"
+  },
+  "player": {
+    "backToEpisodes": "← Volver a los episodios",
+    "explanationsChip": "Explicaciones: {{language}}",
+    "audioUnavailable": "Audio del episodio no disponible.",
+    "loadingAudio": "Cargando audio..."
+  },
+  "ask": {
+    "button": "Preguntar",
+    "thinking": "Pensando",
+    "timeUp": "Tiempo agotado — ¿enviar o repetir?"
+  },
+  "answer": {
+    "label": "Respuesta:"
+  },
+  "wordModal": {
+    "translation": "Traducción",
+    "meaning": "Significado",
+    "pattern": "Patrón",
+    "usageNotes": "Notas de uso",
+    "example": "Ejemplo"
+  },
+  "languagePicker": {
+    "chooseExplanations": "Elige el idioma de las explicaciones",
+    "chooseAnswers": "Elige el idioma de las respuestas",
+    "chooseUi": "Elige el idioma de la aplicación"
+  },
+  "profile": {
+    "user": "Usuario",
+    "plan": "Plan",
+    "planPro": "Pro",
+    "planFree": "Gratis",
+    "expires": "Expira el {{date}}",
+    "renews": "Se renueva el {{date}}",
+    "questionsLeftThisMonth": "restantes este mes",
+    "questionsLeft": "preguntas restantes",
+    "appLanguage": "Idioma de la aplicación",
+    "appLanguageHint": "Idioma de la interfaz",
+    "responseLanguage": "Idioma de respuesta",
+    "responseLanguageHint": "Se usa cuando haces preguntas",
+    "fluentMode": "Modo avanzado",
+    "fluentModeHint": "Respuestas más completas para oyentes con experiencia. Puede tardar más.",
+    "restorePurchases": "Restaurar compras",
+    "shareAnalytics": "Compartir analíticas",
+    "shareAnalyticsHint": "Nos ayuda a mejorar Krashen",
+    "signOut": "Cerrar sesión"
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signUp": "Registrarse",
+    "continueWithGoogle": "Continuar con Google",
+    "or": "o",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "noAccount": "¿No tienes cuenta? Regístrate",
+    "hasAccount": "¿Ya tienes cuenta? Inicia sesión",
+    "signInFailed": "Error al iniciar sesión.",
+    "signUpFailed": "Error al registrarse.",
+    "googleFailed": "Error al iniciar sesión con Google."
+  },
+  "errors": {
+    "micPermission": "Permiso de micrófono denegado o no disponible.",
+    "unauthorized": "No autorizado. Por favor inicia sesión.",
+    "weeklyLimit": "Límite semanal de preguntas alcanzado.",
+    "weeklyLimitResets": "Límite semanal de preguntas alcanzado. Se restablece el {{date}}.",
+    "requestFailed": "La solicitud falló ({{status}}).",
+    "network": "Error de red al enviar la pregunta."
+  },
+  "about": {
+    "back": "← Volver a los podcasts",
+    "startChat": "Iniciar un chat",
+    "privacy": "Política de privacidad",
+    "terms": "Términos del servicio",
+    "supportChatLabel": "Iniciar un chat con soporte",
+    "intro": "# Acerca de Krashen\n\nEscuchar podcasts es una forma probada y recomendada por tutores para aprender un nuevo idioma — salvo que, en la práctica, acabas perdiendo palabras, rebobinando y adivinando lo que se dijo. Por eso, rara vez funciona.\n\n**Krashen** es un reproductor de podcasts que arregla eso. Escuchas los mismos programas que encontrarías en cualquier otra app, pero en cualquier momento puedes pausar y ver la explicación y traducción de cualquier palabra — o hacer una pregunta sobre los últimos segundos: aclarar algo que no entendiste, pedir el significado de una expresión o solicitar una traducción.\n\nYa nada tiene por qué pasar desapercibido.\n\n## Lo que Krashen no es\n\nKrashen **no** es una herramienta de traducción. No pretendemos que escuches podcasts en tu idioma preferido — esa simplemente no es nuestra misión.\n\nCreemos en consumir el contenido en su idioma original.\n\nSin embargo, planeamos añadir un modo *Explicar* para que puedas hacer preguntas incluso cuando escuches por interés general, no solo para practicar idiomas.\n\n## Preguntas frecuentes\n\n### ¿Por qué la colección de podcasts es tan pequeña?\n\nPreparar cada podcast para el diálogo interactivo tiene un coste. Nos centramos primero en contenido profesional de aprendizaje de idiomas y planeamos ampliar el catálogo con el tiempo.\n\n### ¿Puedo añadir mi podcast o episodio favorito?\n\nSí, planeamos ofrecer a todos los usuarios una cuota para añadir sus propios podcasts.\n\n### ¿Por qué \"Krashen\"?\n\nLa app debe su nombre a **Stephen Krashen** ([Wikipedia](https://es.wikipedia.org/wiki/Stephen_Krashen)), un lingüista conocido por su teoría de la adquisición de segundas lenguas. Su *hipótesis del input* sostiene que adquirimos un idioma al comprender mensajes ligeramente por encima de nuestro nivel actual. Esa idea está en el centro de lo que hacemos — ayudarte a aprender interactuando con contenido real y haciendo preguntas mientras escuchas.\n\n## Contáctanos\n\n¿Preguntas, sugerencias de podcasts o comentarios? Inicia un chat abajo, o escríbenos a info@krashen.app — leemos cada mensaje.\n",
+    "outro": "## Avisos\n\n- Krashen no almacena tus grabaciones de audio — solo sus transcripciones, usadas para generar contenido de aprendizaje personalizado.\n- El acceso al micrófono solo se utiliza mientras grabas una pregunta.\n- Krashen no sustituye la tutoría profesional, sino que es un acompañante que hace que la práctica de escucha sea más eficaz.\n- Aunque no prometemos resultados específicos de aprendizaje, creemos genuinamente que escuchar de forma interactiva y preguntar activamente mejora significativamente la comprensión y retención del idioma.\n"
+  },
+  "privacy": {
+    "back": "← Atrás",
+    "content": "# Política de privacidad\n\n_Última actualización: 2026-04-20_\n\nEsta Política de privacidad explica qué datos recopila Krashen (\"nosotros\") cuando usas las aplicaciones móviles y el sitio web de Krashen (el \"Servicio\"), por qué los recopilamos y qué derechos tienes. Si tienes alguna pregunta, escríbenos a info@krashen.app.\n\n## Quiénes somos\n\nKrashen es un reproductor de podcasts interactivo para estudiantes de idiomas, operado por una persona autónoma con sede en España. \"Krashen\" es un nombre de producto, no una entidad legal registrada. Para cualquier solicitud relacionada con la privacidad puedes contactarnos en info@krashen.app.\n\n## Qué recopilamos\n\n**Datos de cuenta.** Cuando inicias sesión, nuestro proveedor de autenticación (Clerk) procesa tu dirección de correo electrónico y, si usas el inicio de sesión con Google, tu nombre y el identificador de tu cuenta de Google.\n\n**Grabaciones de audio.** Cuando haces una pregunta por voz, el audio del micrófono se envía a nuestros servidores y a proveedores externos de conversión de voz a texto para su transcripción. **No almacenamos el audio en sí** — solo el texto transcrito resultante.\n\n**Transcripciones de preguntas y respuestas.** El texto de tus preguntas y las respuestas generadas por IA se almacenan para que puedas revisarlos y para que podamos mejorar el Servicio.\n\n**Actividad de escucha.** Registramos qué podcasts y episodios reproduces, qué palabras tocas para obtener una explicación, el número de preguntas y los tiempos de sesión. Esto se procesa a través de nuestro proveedor de analíticas (PostHog) y se almacena en nuestros servidores.\n\n**Datos del dispositivo y técnicos.** Registros estándar de la aplicación: modelo del dispositivo, sistema operativo, versión de la app, idioma, zona horaria y trazas de errores.\n\n**Datos de pago.** Si te suscribes a un plan de pago, Apple o Google (y RevenueCat, que gestiona las suscripciones en nuestro nombre) procesa tu pago directamente. No vemos ni almacenamos los datos de tu tarjeta.\n\n## Por qué los usamos\n\n- Para prestar el Servicio: reproducir podcasts, transcribir tus preguntas, devolver respuestas, gestionar tu cuenta.\n- Para facturar las suscripciones de pago.\n- Para entender cómo se usa el Servicio y mejorarlo.\n- Para mantener el Servicio seguro, detectar abusos y cumplir obligaciones legales.\n\n## Bases legales (usuarios de la UE/Reino Unido)\n\n- **Contrato** — tratamiento necesario para prestar el Servicio al que te suscribiste.\n- **Intereses legítimos** — analíticas de producto, seguridad y mejora del servicio.\n- **Consentimiento** — analíticas no esenciales en la UE/Reino Unido (puedes retirarlo en cualquier momento desde la app).\n- **Obligación legal** — impuestos, contabilidad y respuesta a requerimientos legales.\n\n## Con quién lo compartimos\n\nSolo compartimos datos con proveedores de servicios que nos ayudan a operar el Servicio, bajo condiciones contractuales de protección de datos:\n\n- **Clerk** — autenticación y gestión de sesiones.\n- **PostHog** — analíticas de producto.\n- **OpenAI** — APIs de conversión de voz a texto (Whisper) y de modelos de lenguaje que procesan tus transcripciones para generar respuestas. OpenAI no usa los datos de la API para entrenar sus modelos.\n- **RevenueCat, Apple, Google** — gestión de suscripciones y pagos.\n- **Proveedores de alojamiento e infraestructura** — para ejecutar los servidores.\n\nNo vendemos tus datos personales.\n\n## Transferencias internacionales\n\nNuestros servidores y proveedores pueden estar ubicados en Estados Unidos y otros países fuera de la UE/Reino Unido. Cuando se requiere, nos basamos en Cláusulas Contractuales Tipo o salvaguardas equivalentes.\n\n## Cuánto tiempo los conservamos\n\n- Datos de cuenta: mientras tu cuenta esté activa, más hasta 12 meses tras la eliminación por motivos legales y de copia de seguridad.\n- Grabaciones de audio: no se almacenan.\n- Transcripciones de preguntas/respuestas: mientras tu cuenta esté activa, o hasta que las elimines.\n- Eventos de analíticas: hasta 24 meses.\n- Registros de facturación: durante el periodo exigido por la ley fiscal y contable.\n\n## Tus derechos\n\nSi estás en la UE, Reino Unido o California, tienes derecho a:\n\n- Acceder a los datos que tenemos sobre ti.\n- Corregir datos inexactos.\n- Eliminar tus datos (\"derecho al olvido\").\n- Restringir u oponerte a ciertos tratamientos.\n- Recibir tus datos en formato portable.\n- Retirar el consentimiento en cualquier momento.\n- Presentar una reclamación ante tu autoridad local de protección de datos.\n\nPara ejercer cualquiera de estos derechos, escribe a info@krashen.app.\n\n## Analíticas y seguimiento\n\nUsamos PostHog para entender cómo se usa la app. En la UE/Reino Unido no enviamos eventos de analíticas a menos que aceptes. Puedes cambiar esto en cualquier momento desde el menú de perfil de la app.\n\nKrashen no usa SDKs publicitarios de terceros ni te rastrea a través de otras aplicaciones o sitios web.\n\n## Requisito de edad\n\nKrashen está destinado a usuarios de **16 años o más**. El Servicio no está dirigido a niños, y no recopilamos a sabiendas datos de personas menores de 16 años. Si crees que un usuario menor ha creado una cuenta, contáctanos para que podamos eliminarla.\n\n## Cambios en esta política\n\nPodemos actualizar esta política de vez en cuando. Los cambios importantes se comunicarán en la app o por correo electrónico. La fecha de \"Última actualización\" en la parte superior siempre refleja la versión actual.\n\n## Contacto\n\nConsultas de privacidad y solicitudes de derechos sobre tus datos: info@krashen.app.\n"
+  },
+  "terms": {
+    "back": "← Atrás",
+    "content": "# Términos del servicio\n\n_Última actualización: 2026-04-20_\n\nEstos Términos del servicio (\"Términos\") rigen el uso de las aplicaciones móviles y el sitio web de Krashen (el \"Servicio\"). El Servicio está operado por una persona autónoma con sede en España. \"Krashen\" es un nombre de producto, no una entidad legal registrada. Al crear una cuenta o usar el Servicio, aceptas estos Términos. Si no estás de acuerdo, por favor no uses el Servicio.\n\n## El Servicio\n\nKrashen es un reproductor de podcasts interactivo para estudiantes de idiomas. Puedes escuchar podcasts, tocar palabras para obtener una explicación y traducción instantáneas, y hacer preguntas por voz o texto sobre lo que acabas de oír. Las respuestas se generan con IA y pueden contener inexactitudes.\n\n## Tu cuenta\n\nDebes tener al menos **16 años** para usar el Servicio. Eres responsable de mantener tus credenciales seguras y de la actividad en tu cuenta. Avísanos en info@krashen.app si sospechas un uso no autorizado.\n\n## Prueba gratuita y planes de pago\n\nAlgunas funciones están disponibles gratuitamente con una cuota limitada (por ejemplo, un número limitado de preguntas). Para seguir usando esas funciones, puedes suscribirte a un plan de pago a través de la App Store o Google Play. Los términos de la suscripción, los precios y los ciclos de facturación se muestran al pagar. Las suscripciones se renuevan automáticamente según las reglas de la tienda, a menos que se cancelen antes de la fecha de renovación. Las cancelaciones se gestionan en tu cuenta de la App Store o Google Play.\n\n## Uso aceptable\n\nAceptas no:\n\n- Usar el Servicio para infringir la ley o los derechos de cualquier persona.\n- Realizar ingeniería inversa, hacer scraping o intentar extraer los modelos, transcripciones o infraestructura subyacentes.\n- Subir o enviar contenido que no tengas derecho a compartir.\n- Intentar eludir cuotas, muros de pago o autenticación.\n- Abusar, acosar o perturbar el Servicio u otros usuarios.\n\nPodemos suspender o cancelar cuentas que infrinjan estas reglas.\n\n## Tu contenido\n\nCuando haces una pregunta, nos concedes una licencia para procesar tu audio y texto únicamente para prestar el Servicio (transcripción, respuesta y mejora del servicio). Conservas la propiedad de tu contenido. No almacenamos tus grabaciones de audio.\n\n## Respuestas generadas por IA\n\nLas respuestas se generan con IA y están destinadas a ayudar con el aprendizaje de idiomas. Pueden ser inexactas, estar desactualizadas o ser incompletas. **Krashen no sustituye la tutoría profesional, la traducción o el asesoramiento experto.** No dependas del Servicio para decisiones críticas.\n\n## Contenido de terceros\n\nLos podcasts disponibles en el Servicio son producidos por terceros. No somos propietarios ni controlamos su contenido, y no somos responsables de su exactitud o legalidad. Los derechos de autor de cada podcast pertenecen a su respectivo propietario.\n\n## Disponibilidad del Servicio\n\nNuestro objetivo es mantener el Servicio funcionando de forma fiable, pero no garantizamos un acceso ininterrumpido. Podemos actualizar, cambiar o discontinuar funciones en cualquier momento.\n\n## Terminación\n\nPuedes dejar de usar el Servicio y eliminar tu cuenta en cualquier momento. Podemos suspender o cancelar tu acceso si infringes estos Términos o si la ley lo exige.\n\n## Avisos\n\nEl Servicio se proporciona \"tal cual\" sin garantías de ningún tipo, expresas o implícitas, incluidas las garantías de comerciabilidad, idoneidad para un propósito particular o no infracción. No garantizamos que el Servicio esté libre de errores, sea seguro o que se obtenga un resultado de aprendizaje específico.\n\n## Limitación de responsabilidad\n\nEn la máxima medida permitida por la ley, Krashen no es responsable de daños indirectos, incidentales, consecuentes o punitivos, ni de la pérdida de beneficios, datos o fondo de comercio. Nuestra responsabilidad total por cualquier reclamación relacionada con el Servicio se limita a la cantidad que nos hayas pagado en los 12 meses previos a la reclamación, o 50 USD si no nos has pagado nada.\n\nNada en estos Términos limita la responsabilidad que no pueda ser excluida legalmente (incluidos, para consumidores de la UE, los derechos estatutarios).\n\n## Cambios en estos Términos\n\nPodemos actualizar estos Términos de vez en cuando. Los cambios importantes se comunicarán en la app o por correo electrónico. El uso continuado del Servicio tras la entrada en vigor de los cambios significa que aceptas los Términos actualizados.\n\n## Ley aplicable\n\nEstos Términos se rigen por las leyes de **España**, sin tener en cuenta sus reglas de conflicto de leyes. Los consumidores de la UE, Reino Unido y otras jurisdicciones conservan la protección de las leyes imperativas de protección al consumidor de su país de residencia. Cualquier disputa se someterá a los tribunales competentes del lugar de establecimiento del operador en España, sin perjuicio de los derechos del consumidor que dispongan lo contrario.\n\n## Contacto\n\nPreguntas sobre estos Términos: info@krashen.app.\n"
+  }
+}

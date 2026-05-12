@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -12,9 +13,9 @@ function formatDuration(seconds: number): string {
   return `${m}min`;
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, locale: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('en-US', {
+  return d.toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function EpisodeCard({ episode, onPress, showProBadge = false }: Props) {
+  const { i18n } = useTranslation();
   const hasMeta = episode.published_at || episode.duration != null;
   const isProLocked = showProBadge && !episode.is_free;
 
@@ -45,7 +47,7 @@ export function EpisodeCard({ episode, onPress, showProBadge = false }: Props) {
         <View style={styles.metaRow}>
           {episode.published_at && (
             <ThemedText style={styles.metaText}>
-              {formatDate(episode.published_at)}
+              {formatDate(episode.published_at, i18n.language)}
             </ThemedText>
           )}
           {episode.published_at && episode.duration != null && (

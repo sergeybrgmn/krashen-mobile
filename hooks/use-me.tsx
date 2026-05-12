@@ -1,4 +1,5 @@
 import { useAuth } from '@clerk/clerk-expo';
+import i18n from 'i18next';
 import {
   ReactNode,
   createContext,
@@ -10,6 +11,7 @@ import {
 } from 'react';
 
 import { Me, fetchMe } from '@/services/api';
+import { SUPPORTED_UI_LANGUAGES, setUiLanguage, UiLanguage } from '@/services/i18n';
 
 interface MeContextValue {
   me: Me | null;
@@ -43,6 +45,18 @@ export function MeProvider({ children }: { children: ReactNode }) {
       if (!token) throw new Error('No auth token');
       const data = await fetchMe(token);
       setMe(data);
+
+      // Sync server-stored UI language to i18n on load. Server is the source of
+      // truth across devices; AsyncStorage cache (set by setUiLanguage) keeps
+      // the next cold start instant.
+      const serverLang = data.ui_language;
+      if (
+        serverLang &&
+        (SUPPORTED_UI_LANGUAGES as readonly string[]).includes(serverLang) &&
+        serverLang !== i18n.language
+      ) {
+        void setUiLanguage(serverLang as UiLanguage);
+      }
     } catch (e) {
       setError(e as Error);
     } finally {

@@ -1,6 +1,7 @@
 import { useSignIn, useSignUp, useSSO } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -21,6 +22,7 @@ export default function SignInScreen() {
   const { signUp, setActive: setSignUpActive, isLoaded: signUpLoaded } = useSignUp();
   const { startSSOFlow } = useSSO();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [mode, setMode] = useState<Mode>('signIn');
   const [email, setEmail] = useState('');
@@ -42,7 +44,7 @@ export default function SignInScreen() {
       }
     } catch (e: unknown) {
       const msg = (e as { errors?: { message: string }[] })?.errors?.[0]?.message;
-      setError(msg ?? 'Sign in failed.');
+      setError(msg ?? t('auth.signInFailed'));
     } finally {
       setLoading(false);
     }
@@ -63,7 +65,7 @@ export default function SignInScreen() {
       }
     } catch (e: unknown) {
       const msg = (e as { errors?: { message: string }[] })?.errors?.[0]?.message;
-      setError(msg ?? 'Sign up failed.');
+      setError(msg ?? t('auth.signUpFailed'));
     } finally {
       setLoading(false);
     }
@@ -82,11 +84,11 @@ export default function SignInScreen() {
       }
     } catch (e: unknown) {
       const msg = (e as { errors?: { message: string }[] })?.errors?.[0]?.message;
-      setError(msg ?? 'Google sign in failed.');
+      setError(msg ?? t('auth.googleFailed'));
     } finally {
       setLoading(false);
     }
-  }, [startSSOFlow, router]);
+  }, [startSSOFlow, router, t]);
 
   return (
     <KeyboardAvoidingView
@@ -95,7 +97,7 @@ export default function SignInScreen() {
     >
       <View style={styles.card}>
         <ThemedText type="title" style={styles.title}>
-          {mode === 'signIn' ? 'Sign In' : 'Sign Up'}
+          {mode === 'signIn' ? t('auth.signIn') : t('auth.signUp')}
         </ThemedText>
 
         {!!error && <ThemedText style={styles.error}>{error}</ThemedText>}
@@ -110,21 +112,21 @@ export default function SignInScreen() {
             <ActivityIndicator color={Colors.textPrimary} />
           ) : (
             <ThemedText style={styles.googleButtonText}>
-              Continue with Google
+              {t('auth.continueWithGoogle')}
             </ThemedText>
           )}
         </Pressable>
 
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
-          <ThemedText type="muted" style={styles.dividerText}>or</ThemedText>
+          <ThemedText type="muted" style={styles.dividerText}>{t('auth.or')}</ThemedText>
           <View style={styles.dividerLine} />
         </View>
 
         {/* Email / Password */}
         <TextInput
           style={styles.input}
-          placeholder="Email"
+          placeholder={t('auth.email')}
           placeholderTextColor={Colors.textMuted}
           value={email}
           onChangeText={setEmail}
@@ -135,7 +137,7 @@ export default function SignInScreen() {
 
         <TextInput
           style={styles.input}
-          placeholder="Password"
+          placeholder={t('auth.password')}
           placeholderTextColor={Colors.textMuted}
           value={password}
           onChangeText={setPassword}
@@ -152,16 +154,14 @@ export default function SignInScreen() {
             <ActivityIndicator color={Colors.black} />
           ) : (
             <ThemedText style={styles.buttonText}>
-              {mode === 'signIn' ? 'Sign In' : 'Sign Up'}
+              {mode === 'signIn' ? t('auth.signIn') : t('auth.signUp')}
             </ThemedText>
           )}
         </Pressable>
 
         <Pressable onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
           <ThemedText type="link" style={styles.toggleText}>
-            {mode === 'signIn'
-              ? "Don't have an account? Sign Up"
-              : 'Already have an account? Sign In'}
+            {mode === 'signIn' ? t('auth.noAccount') : t('auth.hasAccount')}
           </ThemedText>
         </Pressable>
       </View>

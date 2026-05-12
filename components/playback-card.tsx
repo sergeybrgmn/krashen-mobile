@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { ProgressBar } from '@/components/progress-bar';
@@ -42,6 +43,7 @@ export function PlaybackCard({
   onSeek,
   onChangeSpeed,
 }: Props) {
+  const { t } = useTranslation();
   const [speedModalVisible, setSpeedModalVisible] = useState(false);
   const disabled = !audioUrl || !isLoaded;
 
@@ -102,12 +104,12 @@ export function PlaybackCard({
         <View style={styles.footerLeft}>
           {!audioUrl && (
             <ThemedText style={styles.statusText}>
-              Episode audio unavailable.
+              {t('player.audioUnavailable')}
             </ThemedText>
           )}
           {audioUrl && !isLoaded && (
             <ThemedText style={styles.statusText}>
-              Loading audio...
+              {t('player.loadingAudio')}
             </ThemedText>
           )}
         </View>

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -68,6 +69,8 @@ export function AskControls({
   onRedo,
   onConfirmSend,
 }: Props) {
+  const { t } = useTranslation();
+
   // State 2: Listening
   if (isRecording) {
     const remaining = Math.max(0, maxDurationMs - elapsedMs);
@@ -102,7 +105,7 @@ export function AskControls({
 
         <View style={styles.listeningCenter}>
           <ThemedText style={styles.readyText}>
-            Time’s up — send or redo?
+            {t('ask.timeUp')}
           </ThemedText>
         </View>
 
@@ -119,11 +122,11 @@ export function AskControls({
       <View style={styles.thinkingContainer}>
         <Pressable style={[styles.askButton, styles.askButtonDisabled]} disabled>
           <Ionicons name="mic" size={18} color={Colors.black} style={styles.askIcon} />
-          <ThemedText style={styles.askText}>Ask</ThemedText>
+          <ThemedText style={styles.askText}>{t('ask.button')}</ThemedText>
         </Pressable>
         <View style={styles.spinnerRow}>
           <ActivityIndicator color={Colors.cyan} size="small" />
-          <ThemedText style={styles.thinkingText}>Thinking</ThemedText>
+          <ThemedText style={styles.thinkingText}>{t('ask.thinking')}</ThemedText>
         </View>
       </View>
     );
@@ -138,7 +141,7 @@ export function AskControls({
         disabled={disabled}
       >
         <Ionicons name="mic" size={18} color={Colors.black} style={styles.askIcon} />
-          <ThemedText style={styles.askText}>Ask</ThemedText>
+          <ThemedText style={styles.askText}>{t('ask.button')}</ThemedText>
       </Pressable>
     </View>
   );

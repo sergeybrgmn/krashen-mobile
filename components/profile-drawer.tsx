@@ -1,6 +1,7 @@
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Dimensions, Pressable, StyleSheet, Switch, View } from 'react-native';
 import Purchases from 'react-native-purchases';
 import Animated, {
@@ -18,6 +19,12 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useConsent } from '@/hooks/use-consent';
 import { useMe } from '@/hooks/use-me';
 import { updateMe } from '@/services/api';
+import { setUiLanguage, SUPPORTED_UI_LANGUAGES, UiLanguage } from '@/services/i18n';
+
+const UI_LANGUAGE_NAMES: Record<UiLanguage, string> = {
+  en: 'English',
+  es: 'Español',
+};
 
 const DRAWER_WIDTH = Math.round(Dimensions.get('window').width * 7 / 8);
 const TIMING_CONFIG = { duration: 280 };
@@ -27,10 +34,10 @@ interface ProfileDrawerProps {
   onClose: () => void;
 }
 
-function formatDate(iso: string | null | undefined): string {
+function formatDate(iso: string | null | undefined, locale: string): string {
   if (!iso) return '';
   const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
@@ -38,6 +45,7 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   const { getToken, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const { me, loading: meLoading, refetch: refetchMe } = useMe();
+  const { t, i18n } = useTranslation();
 
   // Freshen quota/subscription state whenever the user opens the drawer.
   useEffect(() => {
@@ -45,6 +53,7 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   }, [visible, refetchMe]);
   const [restoring, setRestoring] = useState(false);
   const [responseLangPickerVisible, setResponseLangPickerVisible] = useState(false);
+  const [uiLangPickerVisible, setUiLangPickerVisible] = useState(false);
   const [savingResponseLang, setSavingResponseLang] = useState(false);
   const [savingFluent, setSavingFluent] = useState(false);
   const { accepted: analyticsAccepted, update: setAnalyticsConsent } = useConsent();
@@ -52,6 +61,10 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   const deviceLocale = useMemo(() => getDeviceLanguageCode(), []);
   const responseLanguage = me?.response_language ?? deviceLocale;
   const languageOptions = useMemo(() => LANGUAGES.map((l) => l.code), []);
+  const uiLanguageOptions = useMemo(() => [...SUPPORTED_UI_LANGUAGES], []);
+  const currentUiLanguage = (SUPPORTED_UI_LANGUAGES as readonly string[]).includes(i18n.language)
+    ? (i18n.language as UiLanguage)
+    : 'en';
 
   const handleRestore = useCallback(async () => {
     setRestoring(true);
@@ -75,6 +88,27 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
         await refetchMe();
       } finally {
         setSavingResponseLang(false);
+      }
+    },
+    [getToken, refetchMe],
+  );
+
+  const handleUiLanguageConfirm = useCallback(
+    async (lang: string) => {
+      setUiLangPickerVisible(false);
+      if (!(SUPPORTED_UI_LANGUAGES as readonly string[]).includes(lang)) return;
+      // Apply locally first for instant UI feedback; the server PATCH then
+      // persists across devices. If the network call fails, we still keep the
+      // local choice (next refetchMe will reconcile if needed).
+      await setUiLanguage(lang as UiLanguage);
+      try {
+        const jwtTemplate = process.env.EXPO_PUBLIC_CLERK_JWT_TEMPLATE;
+        const token = await getToken(jwtTemplate ? { template: jwtTemplate } : undefined);
+        if (!token) return;
+        await updateMe(token, { ui_language: lang });
+        await refetchMe();
+      } catch {
+        // Swallow — local choice is already applied; we'll retry on next change.
       }
     },
     [getToken, refetchMe],
@@ -113,7 +147,7 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   }));
 
   const fullName =
-    [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'User';
+    [user?.firstName, user?.lastName].filter(Boolean).join(' ') || t('profile.user');
   const email = user?.emailAddresses?.[0]?.emailAddress ?? '';
 
   return (
@@ -144,20 +178,21 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
         <View style={styles.quotaSection}>
           <View>
             <ThemedText type="small" style={styles.quotaLabel}>
-              Plan
+              {t('profile.plan')}
             </ThemedText>
             {me?.is_subscribed ? (
               <View style={styles.planRow}>
-                <ThemedText style={styles.planBadge}>Pro</ThemedText>
+                <ThemedText style={styles.planBadge}>{t('profile.planPro')}</ThemedText>
                 {me.subscription_expires_at ? (
                   <ThemedText type="small" style={styles.expiryText}>
-                    {me.subscription_status === 'cancelled' ? 'Expires' : 'Renews'}{' '}
-                    {formatDate(me.subscription_expires_at)}
+                    {me.subscription_status === 'cancelled'
+                      ? t('profile.expires', { date: formatDate(me.subscription_expires_at, i18n.language) })
+                      : t('profile.renews', { date: formatDate(me.subscription_expires_at, i18n.language) })}
                   </ThemedText>
                 ) : null}
               </View>
             ) : (
-              <ThemedText style={styles.planFree}>Free</ThemedText>
+              <ThemedText style={styles.planFree}>{t('profile.planFree')}</ThemedText>
             )}
           </View>
           <View style={styles.quotaRight}>
@@ -165,13 +200,31 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
               {meLoading && !me ? '…' : me ? me.questions_left : '—'}
             </ThemedText>
             <ThemedText type="small" style={styles.quotaLabel}>
-              {me?.is_subscribed ? 'left this month' : 'questions left'}
+              {me?.is_subscribed ? t('profile.questionsLeftThisMonth') : t('profile.questionsLeft')}
             </ThemedText>
           </View>
         </View>
 
         {/* Menu */}
         <View style={styles.menuSection}>
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => setUiLangPickerVisible(true)}
+          >
+            <Ionicons name="globe-outline" size={20} color={Colors.textSecondary} />
+            <View style={styles.responseLangRow}>
+              <View style={styles.responseLangLabels}>
+                <ThemedText style={styles.menuItemText}>{t('profile.appLanguage')}</ThemedText>
+                <ThemedText type="small" style={styles.responseLangHint}>
+                  {t('profile.appLanguageHint')}
+                </ThemedText>
+              </View>
+              <ThemedText style={styles.responseLangValue}>
+                {UI_LANGUAGE_NAMES[currentUiLanguage]}
+              </ThemedText>
+            </View>
+          </Pressable>
+
           <Pressable
             style={styles.menuItem}
             onPress={() => setResponseLangPickerVisible(true)}
@@ -184,9 +237,9 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
             )}
             <View style={styles.responseLangRow}>
               <View style={styles.responseLangLabels}>
-                <ThemedText style={styles.menuItemText}>Response language</ThemedText>
+                <ThemedText style={styles.menuItemText}>{t('profile.responseLanguage')}</ThemedText>
                 <ThemedText type="small" style={styles.responseLangHint}>
-                  Used when you ask questions
+                  {t('profile.responseLanguageHint')}
                 </ThemedText>
               </View>
               <ThemedText style={styles.responseLangValue}>
@@ -203,9 +256,9 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
             )}
             <View style={styles.fluentRow}>
               <View style={styles.fluentLabels}>
-                <ThemedText style={styles.menuItemText}>Fluent mode</ThemedText>
+                <ThemedText style={styles.menuItemText}>{t('profile.fluentMode')}</ThemedText>
                 <ThemedText type="small" style={styles.fluentHint}>
-                  Substantive answers for experienced listeners. May take longer.
+                  {t('profile.fluentModeHint')}
                 </ThemedText>
               </View>
               <Switch
@@ -228,16 +281,16 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
             ) : (
               <Ionicons name="refresh-outline" size={20} color={Colors.textSecondary} />
             )}
-            <ThemedText style={styles.menuItemText}>Restore Purchases</ThemedText>
+            <ThemedText style={styles.menuItemText}>{t('profile.restorePurchases')}</ThemedText>
           </Pressable>
 
           <View style={styles.menuItem}>
             <Ionicons name="stats-chart-outline" size={20} color={Colors.textSecondary} />
             <View style={styles.analyticsRow}>
               <View style={styles.analyticsLabels}>
-                <ThemedText style={styles.menuItemText}>Share analytics</ThemedText>
+                <ThemedText style={styles.menuItemText}>{t('profile.shareAnalytics')}</ThemedText>
                 <ThemedText type="small" style={styles.analyticsHint}>
-                  Helps us improve Krashen
+                  {t('profile.shareAnalyticsHint')}
                 </ThemedText>
               </View>
               <Switch
@@ -257,18 +310,28 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
             onPress={() => signOut()}
           >
             <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-            <ThemedText style={styles.signOutText}>Sign Out</ThemedText>
+            <ThemedText style={styles.signOutText}>{t('profile.signOut')}</ThemedText>
           </Pressable>
         </View>
       </Animated.View>
 
       <LanguageChoiceModal
         visible={responseLangPickerVisible}
-        title="Choose the language for answers"
+        title={t('languagePicker.chooseAnswers')}
         options={languageOptions}
         initial={responseLanguage}
         onConfirm={handleResponseLanguageConfirm}
         onCancel={() => setResponseLangPickerVisible(false)}
+      />
+
+      <LanguageChoiceModal
+        visible={uiLangPickerVisible}
+        title={t('languagePicker.chooseUi')}
+        options={uiLanguageOptions}
+        initial={currentUiLanguage}
+        onConfirm={handleUiLanguageConfirm}
+        onCancel={() => setUiLangPickerVisible(false)}
+        labelFn={(code) => UI_LANGUAGE_NAMES[code as UiLanguage] ?? code}
       />
     </View>
   );

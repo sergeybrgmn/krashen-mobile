@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function ErrorModal({ visible, message, isAuth, onDismiss, onSignIn }: Props) {
+  const { t } = useTranslation();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.overlay}>
@@ -20,16 +22,16 @@ export function ErrorModal({ visible, message, isAuth, onDismiss, onSignIn }: Pr
 
           <View style={styles.buttons}>
             <Pressable style={styles.cancelButton} onPress={onDismiss}>
-              <ThemedText style={styles.cancelText}>Cancel</ThemedText>
+              <ThemedText style={styles.cancelText}>{t('common.cancel')}</ThemedText>
             </Pressable>
 
             {isAuth ? (
               <Pressable style={styles.primaryButton} onPress={onSignIn}>
-                <ThemedText style={styles.primaryText}>Sign in</ThemedText>
+                <ThemedText style={styles.primaryText}>{t('common.signIn')}</ThemedText>
               </Pressable>
             ) : (
               <Pressable style={styles.primaryButton} onPress={onDismiss}>
-                <ThemedText style={styles.primaryText}>OK</ThemedText>
+                <ThemedText style={styles.primaryText}>{t('common.ok')}</ThemedText>
               </Pressable>
             )}
           </View>

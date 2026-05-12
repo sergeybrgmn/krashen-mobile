@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -12,6 +13,7 @@ interface Props {
   initial?: string | null;
   onConfirm: (lang: string) => void;
   onCancel: () => void;
+  labelFn?: (code: string) => string;
 }
 
 const SCROLL_THRESHOLD = 8;
@@ -23,7 +25,9 @@ export function LanguageChoiceModal({
   initial,
   onConfirm,
   onCancel,
+  labelFn = getLanguageName,
 }: Props) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string>(
     initial && options.includes(initial) ? initial : options[0] ?? 'en',
   );
@@ -62,7 +66,7 @@ export function LanguageChoiceModal({
                       selected === code && styles.optionTextSelected,
                     ]}
                   >
-                    {getLanguageName(code)}
+                    {labelFn(code)}
                   </ThemedText>
                 </Pressable>
               ))}
@@ -71,13 +75,13 @@ export function LanguageChoiceModal({
 
           <View style={styles.buttons}>
             <Pressable style={styles.cancelButton} onPress={onCancel}>
-              <ThemedText style={styles.cancelText}>Cancel</ThemedText>
+              <ThemedText style={styles.cancelText}>{t('common.cancel')}</ThemedText>
             </Pressable>
             <Pressable
               style={styles.confirmButton}
               onPress={() => onConfirm(selected)}
             >
-              <ThemedText style={styles.confirmText}>Confirm</ThemedText>
+              <ThemedText style={styles.confirmText}>{t('common.confirm')}</ThemedText>
             </Pressable>
           </View>
         </View>

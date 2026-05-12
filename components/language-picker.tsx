@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -12,9 +13,10 @@ interface Props {
 }
 
 export function LanguagePicker({ languages, selected, onSelect }: Props) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
-  const displayLabel = selected ? getLanguageName(selected) : 'All Languages';
+  const displayLabel = selected ? getLanguageName(selected) : t('home.allLanguages');
 
   return (
     <View>
@@ -41,7 +43,7 @@ export function LanguagePicker({ languages, selected, onSelect }: Props) {
               <ThemedText
                 style={[styles.optionText, !selected && styles.optionSelected]}
               >
-                All Languages
+                {t('home.allLanguages')}
               </ThemedText>
             </Pressable>
 

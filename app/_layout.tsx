@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import { MeProvider } from '@/hooks/use-me';
 import { tokenCache } from '@/services/auth';
+import '@/services/i18n';
 import { configurePurchases, identifyUser, resetUser } from '@/services/purchases';
 import { configureAnalytics, identifyAnalyticsUser, resetAnalyticsUser } from '@/services/analytics';
 import { configureCrisp, identifyCrispUser, resetCrispUser } from '@/services/crisp';
