@@ -43,3 +43,6 @@ app-example
 /ios
 /android
 
+
+# EAS / Apple credentials
+/credentials/

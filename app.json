@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "Krashen",
-    "slug": "krashen-mobile",
+    "slug": "krashen",
+    "owner": "sergeybergmann",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -51,14 +52,24 @@
       [
         "expo-build-properties",
         {
-          "ios": { "deploymentTarget": "15.1" },
-          "android": { "minSdkVersion": 21 }
+          "ios": {
+            "deploymentTarget": "15.1"
+          },
+          "android": {
+            "minSdkVersion": 21
+          }
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b333fe5a-421b-46d1-82a0-47360b3109c8"
+      }
     }
   }
 }
