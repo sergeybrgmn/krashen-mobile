@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AnswerModal } from '@/components/answer-modal';
 import { AskControls } from '@/components/ask-controls';
-import { AnswerBlock } from '@/components/answer-block';
 import { ErrorModal } from '@/components/error-modal';
+import { QuestionHistoryModal } from '@/components/question-history-modal';
 import { LanguageChoiceModal } from '@/components/language-choice-modal';
 import { PlaybackCard } from '@/components/playback-card';
 import { ProfileDrawer } from '@/components/profile-drawer';
@@ -34,6 +35,7 @@ import { useMe } from '@/hooks/use-me';
 import { usePaywall } from '@/hooks/use-paywall';
 import { useWakeLock } from '@/hooks/use-wake-lock';
 import {
+  AskResponse,
   Episode,
   Podcast,
   WordExplanation,
@@ -79,7 +81,8 @@ export default function PlayerScreen() {
   const { saveExplanationLanguage } = useExplanationLanguage();
   const presentPaywall = usePaywall();
 
-  const [answer, setAnswer] = useState<string | null>(null);
+  const [askResult, setAskResult] = useState<AskResponse | null>(null);
+  const [historyVisible, setHistoryVisible] = useState(false);
   const [selectedWord, setSelectedWord] = useState<WordExplanation | null>(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [errorModal, setErrorModal] = useState<{
@@ -212,7 +215,7 @@ export default function PlayerScreen() {
         responseLanguage,
         uri,
       );
-      setAnswer(result.answer);
+      setAskResult(result);
       // Refresh quota so the gate in handleAskStart stays current.
       void refetchMe();
     } catch (e: unknown) {
@@ -268,6 +271,14 @@ export default function PlayerScreen() {
     await handleAskStart();
   }, [handleAskStart]);
 
+  const handleShowHistory = useCallback(() => {
+    setHistoryVisible(true);
+    posthog?.capture('qa_history_opened', {
+      episode_id: episodeId,
+      podcast_id: podcastId,
+    });
+  }, [episodeId, podcastId]);
+
   if (metaLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -319,6 +330,7 @@ export default function PlayerScreen() {
           onSkip={player.skip}
           onSeek={player.seek}
           onChangeSpeed={player.changeSpeed}
+          onShowHistory={handleShowHistory}
         />
 
         {/* Ask Controls */}
@@ -362,10 +374,17 @@ export default function PlayerScreen() {
             onWordPress={handleWordPress}
           />
         )}
-
-        {/* Answer */}
-        {answer && <AnswerBlock answer={answer} />}
       </ScrollView>
+
+      {/* Fresh answer to a just-asked question */}
+      <AnswerModal result={askResult} onClose={() => setAskResult(null)} />
+
+      {/* Q&A history for this episode */}
+      <QuestionHistoryModal
+        visible={historyVisible}
+        episodeId={episodeId ?? null}
+        onClose={() => setHistoryVisible(false)}
+      />
 
       {/* Word Explanation Modal */}
       <WordExplanationModal

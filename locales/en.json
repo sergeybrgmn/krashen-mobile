@@ -28,8 +28,15 @@
     "thinking": "Thinking",
     "timeUp": "Time's up — send or redo?"
   },
-  "answer": {
-    "label": "Answer:"
+  "qa": {
+    "question": "Question",
+    "answer": "Answer",
+    "noAnswer": "No answer available.",
+    "historyButton": "Questions",
+    "historyTitle": "Questions & answers",
+    "historyEmpty": "You haven't asked any questions in this episode yet.",
+    "historyError": "Couldn't load your questions.",
+    "askedAt": "Asked on {{date}}"
   },
   "wordModal": {
     "translation": "Translation",

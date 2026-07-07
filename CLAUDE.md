@@ -57,6 +57,7 @@ Base URL configurable via `EXPO_PUBLIC_API_BASE_URL` (default: `https://pregunta
 | GET | `/api/podcasts` | No |
 | GET | `/api/podcast/{id}/episodes` | No |
 | GET | `/api/episode/{id}/data?target_language={lang}` | No |
+| GET | `/api/episode/{id}/questions` | Bearer JWT (Clerk) |
 | POST | `/api/ask` | Bearer JWT (Clerk) |
 
 ### Auth

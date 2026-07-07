@@ -28,8 +28,15 @@
     "thinking": "Pensando",
     "timeUp": "Tiempo agotado — ¿enviar o repetir?"
   },
-  "answer": {
-    "label": "Respuesta:"
+  "qa": {
+    "question": "Pregunta",
+    "answer": "Respuesta",
+    "noAnswer": "Respuesta no disponible.",
+    "historyButton": "Preguntas",
+    "historyTitle": "Preguntas y respuestas",
+    "historyEmpty": "Aún no has hecho preguntas en este episodio.",
+    "historyError": "No se pudieron cargar tus preguntas.",
+    "askedAt": "Preguntado el {{date}}"
   },
   "wordModal": {
     "translation": "Traducción",

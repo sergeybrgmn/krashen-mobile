@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
@@ -27,6 +28,7 @@ interface Props {
   onSkip: (delta: number) => void;
   onSeek: (seconds: number) => void;
   onChangeSpeed: (speed: number) => void;
+  onShowHistory?: () => void;
 }
 
 export function PlaybackCard({
@@ -42,6 +44,7 @@ export function PlaybackCard({
   onSkip,
   onSeek,
   onChangeSpeed,
+  onShowHistory,
 }: Props) {
   const { t } = useTranslation();
   const [speedModalVisible, setSpeedModalVisible] = useState(false);
@@ -113,6 +116,12 @@ export function PlaybackCard({
             </ThemedText>
           )}
         </View>
+        {onShowHistory && (
+          <Pressable style={styles.historyButton} onPress={onShowHistory} hitSlop={8}>
+            <Ionicons name="chatbubbles-outline" size={16} color={Colors.textSecondary} />
+            <ThemedText style={styles.historyText}>{t('qa.historyButton')}</ThemedText>
+          </Pressable>
+        )}
       </View>
 
       {/* Speed dropdown modal */}
@@ -232,6 +241,21 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 13,
     color: Colors.textMuted,
+  },
+  historyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radii.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  historyText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '600',
   },
   speedButton: {
     paddingHorizontal: Spacing.md,

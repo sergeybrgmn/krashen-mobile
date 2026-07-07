@@ -43,7 +43,17 @@ export interface EpisodeData {
 }
 
 export interface AskResponse {
-  answer: string;
+  question: string;
+  answer: string | null;
+}
+
+export interface EpisodeQuestion {
+  id: string;
+  /** Playback position (seconds) when the question was asked */
+  moment: number;
+  question: string;
+  answer: string | null;
+  created_at: string;
 }
 
 export interface Me {
@@ -102,6 +112,13 @@ export function fetchEpisodeData(
     `/api/episode/${episodeId}/data?target_language=${encodeURIComponent(targetLanguage)}`,
     { headers: authHeaders(token) },
   );
+}
+
+export function fetchEpisodeQuestions(
+  token: string,
+  episodeId: string,
+): Promise<EpisodeQuestion[]> {
+  return fetchJSON(`/api/episode/${episodeId}/questions`, { headers: authHeaders(token) });
 }
 
 export async function fetchMe(token: string): Promise<Me> {

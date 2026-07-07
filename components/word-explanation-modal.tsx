@@ -36,8 +36,11 @@ export function WordExplanationModal({ word, targetLanguage, onClose }: Props) {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={styles.card} onStartShouldSetResponder={() => true}>
+      {/* Backdrop is a sibling behind the card (not a wrapping Pressable):
+          a pressable ancestor steals drag gestures from the ScrollView. */}
+      <View style={styles.overlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={styles.card}>
           {word && (
             <>
               <View style={styles.header}>
@@ -69,7 +72,7 @@ export function WordExplanationModal({ word, targetLanguage, onClose }: Props) {
             </>
           )}
         </View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }
@@ -107,7 +110,11 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   body: {
+    // flexShrink lets the ScrollView shrink to the card's maxHeight instead of
+    // being laid out at full content height (which clips without ever becoming
+    // scrollable).
     flexGrow: 0,
+    flexShrink: 1,
   },
   field: {
     marginBottom: Spacing.md,
