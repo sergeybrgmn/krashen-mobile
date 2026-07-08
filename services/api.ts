@@ -24,13 +24,19 @@ export interface Segment {
   text: string;
 }
 
+export interface WordToken {
+  surface: string;
+  lemma: string;
+  pos: string;
+}
+
 export interface WordExplanation {
   surface: string;
   start_char: number;
   end_char: number;
   translation: string | null;
-  pos: string;
-  lemma?: string;
+  /** One entry per token; multi-word expressions have several, each with its own lemma/POS */
+  tokens: WordToken[];
   meaning: string;
   pattern: string | null;
   usage_notes: string | null;

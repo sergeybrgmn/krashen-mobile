@@ -4,12 +4,46 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { getPosColor, getPosLabel } from '@/constants/pos';
 import { Colors, Radii, Spacing } from '@/constants/theme';
-import { WordExplanation } from '@/services/api';
+import { WordExplanation, WordToken } from '@/services/api';
 
 interface Props {
   word: WordExplanation | null;
   targetLanguage?: string;
   onClose: () => void;
+}
+
+interface PosBadge {
+  pos: string;
+  label: string;
+  color: string;
+}
+
+// One badge per token, skipping unlabeled POS (punctuation etc.) and collapsing
+// consecutive repeats ("Estados Unidos" is one "Proper noun", not two).
+function getPosBadges(tokens: WordToken[], language: string): PosBadge[] {
+  const badges: PosBadge[] = [];
+  for (const token of tokens) {
+    const label = getPosLabel(token.pos, language);
+    if (!label) continue;
+    if (badges.length > 0 && badges[badges.length - 1].pos === token.pos) continue;
+    badges.push({ pos: token.pos, label, color: getPosColor(token.pos) });
+  }
+  return badges;
+}
+
+// Dictionary forms worth showing: verb tokens whose lemma differs from the
+// surface; skips infinitives that already match the text. A single word shows
+// the bare lemma ("dar" under "dio"); inside a multi-word expression each lemma
+// is prefixed with its surface ("coleando → colear") so it's clear which word
+// it belongs to.
+function getVerbLemmas(tokens: WordToken[]): string[] {
+  return tokens
+    .filter(
+      (t) =>
+        (t.pos === 'VERB' || t.pos === 'AUX') &&
+        t.lemma.toLowerCase() !== t.surface.toLowerCase(),
+    )
+    .map((t) => (tokens.length > 1 ? `${t.surface} → ${t.lemma}` : t.lemma));
 }
 
 function Field({ label, value, italic }: { label: string; value: string | null; italic?: boolean }) {
@@ -26,8 +60,8 @@ function Field({ label, value, italic }: { label: string; value: string | null; 
 
 export function WordExplanationModal({ word, targetLanguage, onClose }: Props) {
   const { t } = useTranslation();
-  const posLabel = word ? getPosLabel(word.pos, targetLanguage ?? 'en') : null;
-  const posColor = word ? getPosColor(word.pos) : '#94a3b8';
+  const posBadges = word ? getPosBadges(word.tokens, targetLanguage ?? 'en') : [];
+  const verbLemmas = word ? getVerbLemmas(word.tokens) : [];
 
   return (
     <Modal
@@ -44,16 +78,23 @@ export function WordExplanationModal({ word, targetLanguage, onClose }: Props) {
           {word && (
             <>
               <View style={styles.header}>
-                <View>
+                <View style={styles.headerLeft}>
                   <ThemedText style={styles.surface}>{word.surface}</ThemedText>
-                  {(word.pos === 'VERB' || word.pos === 'AUX') && word.lemma && (
-                    <ThemedText style={styles.lemma}>{word.lemma}</ThemedText>
+                  {verbLemmas.length > 0 && (
+                    <ThemedText style={styles.lemma}>{verbLemmas.join(', ')}</ThemedText>
                   )}
-                  {posLabel && (
-                    <View style={[styles.posBadge, { backgroundColor: posColor + '20' }]}>
-                      <ThemedText style={[styles.posBadgeText, { color: posColor }]}>
-                        {posLabel}
-                      </ThemedText>
+                  {posBadges.length > 0 && (
+                    <View style={styles.posBadges}>
+                      {posBadges.map((badge, i) => (
+                        <View
+                          key={`${badge.pos}-${i}`}
+                          style={[styles.posBadge, { backgroundColor: badge.color + '20' }]}
+                        >
+                          <ThemedText style={[styles.posBadgeText, { color: badge.color }]}>
+                            {badge.label}
+                          </ThemedText>
+                        </View>
+                      ))}
                     </View>
                   )}
                 </View>
@@ -96,6 +137,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.lg,
   },
+  headerLeft: {
+    flexShrink: 1,
+  },
   surface: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -134,12 +178,16 @@ const styles = StyleSheet.create({
   italic: {
     fontStyle: 'italic',
   },
+  posBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
   posBadge: {
-    alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
-    marginTop: 4,
   },
   posBadgeText: {
     fontSize: 12,
