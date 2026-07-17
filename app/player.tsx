@@ -33,8 +33,10 @@ import { useEpisodeData } from '@/hooks/use-episode-data';
 import { useExplanationLanguage } from '@/hooks/use-explanation-language';
 import { useMe } from '@/hooks/use-me';
 import { usePaywall } from '@/hooks/use-paywall';
+import { useSavedWords } from '@/hooks/use-saved-words';
 import { useWakeLock } from '@/hooks/use-wake-lock';
 import {
+  ApiError,
   AskResponse,
   Episode,
   Podcast,
@@ -80,10 +82,18 @@ export default function PlayerScreen() {
   const { me, refetch: refetchMe } = useMe();
   const { saveExplanationLanguage } = useExplanationLanguage();
   const presentPaywall = usePaywall();
+  const {
+    savedByKey,
+    save: saveWordToVocab,
+    remove: removeWordFromVocab,
+    pending: savePending,
+  } = useSavedWords(episodeId, targetLanguage ?? undefined);
 
   const [askResult, setAskResult] = useState<AskResponse | null>(null);
   const [historyVisible, setHistoryVisible] = useState(false);
-  const [selectedWord, setSelectedWord] = useState<WordExplanation | null>(null);
+  const [selectedWord, setSelectedWord] = useState<
+    { word: WordExplanation; segmentIndex: number } | null
+  >(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [errorModal, setErrorModal] = useState<{
     message: string;
@@ -156,14 +166,82 @@ export default function PlayerScreen() {
     };
   }, [proRequired, presentPaywall, refetchMe, refetchEpisodeData, router]);
 
-  const handleWordPress = useCallback((word: WordExplanation) => {
-    setSelectedWord(word);
+  const handleWordPress = useCallback((word: WordExplanation, segmentIndex: number) => {
+    setSelectedWord({ word, segmentIndex });
     posthog?.capture('word_tapped', {
       word: word.surface,
       episode_id: episodeId,
       target_language: targetLanguage,
     });
   }, [episodeId, targetLanguage]);
+
+  // Save/unsave the word currently open in the modal. Unsaving is free; saving
+  // requires PRO — gate on the known /me state, and (edge) retry after the
+  // paywall if the backend still answers pro_required against a stale /me.
+  const handleToggleSave = useCallback(async () => {
+    if (!selectedWord) return;
+    const { word, segmentIndex } = selectedWord;
+    const key = `${segmentIndex}:${word.start_char}`;
+    const existing = savedByKey.get(key);
+
+    const captureSaved = () =>
+      posthog?.capture('word_saved', {
+        word: word.surface,
+        episode_id: episodeId,
+        target_language: targetLanguage,
+      });
+
+    if (existing) {
+      try {
+        await removeWordFromVocab(existing);
+        posthog?.capture('word_unsaved', {
+          word: word.surface,
+          episode_id: episodeId,
+          target_language: targetLanguage,
+        });
+      } catch {
+        // use-saved-words already logged; nothing else to do.
+      }
+      return;
+    }
+
+    if (!me?.is_subscribed) {
+      const purchased = await presentPaywall();
+      if (!purchased) return;
+      await refetchMe();
+    }
+
+    try {
+      await saveWordToVocab(segmentIndex, word.start_char);
+      captureSaved();
+    } catch (e) {
+      const apiErr = e as ApiError;
+      // Stale /me: backend rejected with pro_required. Offer the paywall, then
+      // retry the save once on purchase.
+      if (apiErr.status === 403 && apiErr.detail?.code === 'pro_required') {
+        const purchased = await presentPaywall();
+        if (!purchased) return;
+        await refetchMe();
+        try {
+          await saveWordToVocab(segmentIndex, word.start_char);
+          captureSaved();
+        } catch {
+          // give up; already logged.
+        }
+      }
+      // Other errors (e.g. saved_words_limit_reached) already logged by the hook.
+    }
+  }, [
+    selectedWord,
+    savedByKey,
+    removeWordFromVocab,
+    me,
+    presentPaywall,
+    refetchMe,
+    saveWordToVocab,
+    episodeId,
+    targetLanguage,
+  ]);
 
   const handleExplanationConfirm = useCallback(
     async (lang: string) => {
@@ -388,9 +466,16 @@ export default function PlayerScreen() {
 
       {/* Word Explanation Modal */}
       <WordExplanationModal
-        word={selectedWord}
+        word={selectedWord?.word ?? null}
         targetLanguage={targetLanguage ?? undefined}
         onClose={() => setSelectedWord(null)}
+        isSaved={
+          selectedWord
+            ? savedByKey.has(`${selectedWord.segmentIndex}:${selectedWord.word.start_char}`)
+            : false
+        }
+        onToggleSave={handleToggleSave}
+        savePending={savePending}
       />
 
       {/* Explanation Language Picker */}

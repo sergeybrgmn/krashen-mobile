@@ -1,5 +1,6 @@
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Dimensions, Pressable, StyleSheet, Switch, View } from 'react-native';
@@ -43,6 +44,7 @@ function formatDate(iso: string | null | undefined, locale: string): string {
 export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   const { user } = useUser();
   const { getToken, signOut } = useAuth();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { me, loading: meLoading, refetch: refetchMe } = useMe();
   const { t, i18n } = useTranslation();
@@ -207,6 +209,17 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
 
         {/* Menu */}
         <View style={styles.menuSection}>
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => {
+              onClose();
+              router.push('/vocabulary');
+            }}
+          >
+            <Ionicons name="book-outline" size={20} color={Colors.textSecondary} />
+            <ThemedText style={styles.menuItemText}>{t('profile.myWords')}</ThemedText>
+          </Pressable>
+
           <Pressable
             style={styles.menuItem}
             onPress={() => setUiLangPickerVisible(true)}

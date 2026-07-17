@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -10,6 +11,11 @@ interface Props {
   word: WordExplanation | null;
   targetLanguage?: string;
   onClose: () => void;
+  /** When provided, renders a save toggle in the header. Omitted (e.g. on the
+   * vocabulary screen) hides the button, keeping the modal read-only. */
+  isSaved?: boolean;
+  onToggleSave?: () => void;
+  savePending?: boolean;
 }
 
 interface PosBadge {
@@ -58,7 +64,14 @@ function Field({ label, value, italic }: { label: string; value: string | null; 
   );
 }
 
-export function WordExplanationModal({ word, targetLanguage, onClose }: Props) {
+export function WordExplanationModal({
+  word,
+  targetLanguage,
+  onClose,
+  isSaved,
+  onToggleSave,
+  savePending,
+}: Props) {
   const { t } = useTranslation();
   const posBadges = word ? getPosBadges(word.tokens, targetLanguage ?? 'en') : [];
   const verbLemmas = word ? getVerbLemmas(word.tokens) : [];
@@ -79,7 +92,27 @@ export function WordExplanationModal({ word, targetLanguage, onClose }: Props) {
             <>
               <View style={styles.header}>
                 <View style={styles.headerLeft}>
-                  <ThemedText style={styles.surface}>{word.surface}</ThemedText>
+                  <ThemedText style={styles.surface}>
+                    {word.surface}
+                    {onToggleSave && (
+                      <>
+                        {/* nbsp keeps the icon glued to the last word across line wraps */}
+                        {'  '}
+                        {/* Rendered as a text glyph (Ionicons is a font), not an inline
+                            View — glyphs sit on the baseline like characters, while
+                            inline Views fight baseline alignment. */}
+                        <Ionicons
+                          name={isSaved ? 'checkmark-circle' : 'add-circle-outline'}
+                          size={24}
+                          color={isSaved ? Colors.cyan : Colors.textPrimary}
+                          onPress={savePending ? undefined : onToggleSave}
+                          suppressHighlighting
+                          accessibilityRole="button"
+                          accessibilityLabel={isSaved ? t('wordModal.saved') : t('wordModal.save')}
+                        />
+                      </>
+                    )}
+                  </ThemedText>
                   {verbLemmas.length > 0 && (
                     <ThemedText style={styles.lemma}>{verbLemmas.join(', ')}</ThemedText>
                   )}

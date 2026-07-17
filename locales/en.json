@@ -43,7 +43,19 @@
     "meaning": "Meaning",
     "pattern": "Pattern",
     "usageNotes": "Usage notes",
-    "example": "Example"
+    "example": "Example",
+    "save": "Save word",
+    "saved": "Saved"
+  },
+  "vocabulary": {
+    "title": "My Words",
+    "empty": "No saved words yet",
+    "emptyHint": "Tap a word while listening and press + to save it",
+    "error": "Couldn't load your words.",
+    "delete": "Delete word",
+    "searchPlaceholder": "Search your words",
+    "noMatches": "No words match your search",
+    "clearSearch": "Clear search"
   },
   "languagePicker": {
     "chooseExplanations": "Choose the language for explanations",
@@ -59,6 +71,7 @@
     "renews": "Renews {{date}}",
     "questionsLeftThisMonth": "left this month",
     "questionsLeft": "questions left",
+    "myWords": "My Words",
     "appLanguage": "App language",
     "appLanguageHint": "Language of the app interface",
     "responseLanguage": "Response language",

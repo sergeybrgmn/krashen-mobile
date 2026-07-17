@@ -43,7 +43,19 @@
     "meaning": "Significado",
     "pattern": "Patrón",
     "usageNotes": "Notas de uso",
-    "example": "Ejemplo"
+    "example": "Ejemplo",
+    "save": "Guardar palabra",
+    "saved": "Guardada"
+  },
+  "vocabulary": {
+    "title": "Mis palabras",
+    "empty": "Aún no hay palabras guardadas",
+    "emptyHint": "Toca una palabra mientras escuchas y pulsa + para guardarla",
+    "error": "No se pudieron cargar tus palabras.",
+    "delete": "Eliminar palabra",
+    "searchPlaceholder": "Buscar en tus palabras",
+    "noMatches": "Ninguna palabra coincide con tu búsqueda",
+    "clearSearch": "Borrar búsqueda"
   },
   "languagePicker": {
     "chooseExplanations": "Elige el idioma de las explicaciones",
@@ -59,6 +71,7 @@
     "renews": "Se renueva el {{date}}",
     "questionsLeftThisMonth": "restantes este mes",
     "questionsLeft": "preguntas restantes",
+    "myWords": "Mis palabras",
     "appLanguage": "Idioma de la aplicación",
     "appLanguageHint": "Idioma de la interfaz",
     "responseLanguage": "Idioma de respuesta",

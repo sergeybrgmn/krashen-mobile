@@ -48,6 +48,38 @@ export interface EpisodeData {
   explanations: Record<string, { words: WordExplanation[] }>;
 }
 
+/** The word card stored with a saved word. A superset of {@link WordExplanation}:
+ * the backend resolves and persists the full card, adding fields such as
+ * `difficulty`. Extra token fields (`morph`/offsets) arrive as untyped JSON. */
+export interface SavedWordCard extends WordExplanation {
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+}
+
+export interface SavedWord {
+  id: string;
+  episode_id: string | null;
+  episode_title: string | null;
+  target_language: string;
+  segment_index: number;
+  start_char: number;
+  card: SavedWordCard;
+  schema_version: number;
+  created_at: string;
+}
+
+export interface SavedWordsPage {
+  items: SavedWord[];
+  total: number;
+}
+
+/** Coordinates the app sends to save a word; the backend resolves the card. */
+export interface SaveWordInput {
+  episode_id: string;
+  target_language: string;
+  segment_index: number;
+  start_char: number;
+}
+
 export interface AskResponse {
   question: string;
   answer: string | null;
@@ -201,4 +233,48 @@ export async function submitQuestion(
     throw err;
   }
   return res.json();
+}
+
+/** Save a word to the user's personal vocabulary. Idempotent server-side —
+ * repeat saves of the same coordinates return the same row. May throw an
+ * {@link ApiError} with `detail.code` `pro_required` or `saved_words_limit_reached`. */
+export function saveWord(token: string, input: SaveWordInput): Promise<SavedWord> {
+  return fetchJSON('/api/saved-words', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+}
+
+export function fetchSavedWords(
+  token: string,
+  params?: { episodeId?: string; targetLanguage?: string; q?: string; limit?: number; offset?: number },
+): Promise<SavedWordsPage> {
+  const query: string[] = [];
+  if (params?.episodeId) query.push(`episode_id=${encodeURIComponent(params.episodeId)}`);
+  if (params?.targetLanguage) {
+    query.push(`target_language=${encodeURIComponent(params.targetLanguage)}`);
+  }
+  if (params?.q) query.push(`q=${encodeURIComponent(params.q)}`);
+  if (params?.limit !== undefined) query.push(`limit=${params.limit}`);
+  if (params?.offset !== undefined) query.push(`offset=${params.offset}`);
+  const qs = query.length > 0 ? `?${query.join('&')}` : '';
+  return fetchJSON(`/api/saved-words${qs}`, { headers: authHeaders(token) });
+}
+
+/** Delete a saved word. The backend answers 204 with an empty body, so this
+ * doesn't route through fetchJSON (which would fail parsing an empty response). */
+export async function deleteSavedWord(token: string, id: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/saved-words/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  if (!res.ok) {
+    const err = new Error(`API ${res.status}`) as ApiError;
+    err.status = res.status;
+    throw err;
+  }
 }

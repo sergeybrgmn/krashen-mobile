@@ -103,6 +103,7 @@ export default function RootLayout() {
             >
               <Stack.Screen name="index" />
               <Stack.Screen name="player" />
+              <Stack.Screen name="vocabulary" />
               <Stack.Screen name="about" />
               <Stack.Screen name="privacy" />
               <Stack.Screen name="terms" />

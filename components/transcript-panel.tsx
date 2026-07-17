@@ -10,7 +10,7 @@ interface Props {
   explanations: Record<string, { words: WordExplanation[] }>;
   currentTime: number;
   loading: boolean;
-  onWordPress: (word: WordExplanation) => void;
+  onWordPress: (word: WordExplanation, segmentIndex: number) => void;
 }
 
 function findCurrentSegmentIndex(segments: Segment[], time: number): number {
@@ -40,7 +40,7 @@ function SegmentText({
   segment: Segment;
   segmentIndex: number;
   explanations: Record<string, { words: WordExplanation[] }>;
-  onWordPress: (word: WordExplanation) => void;
+  onWordPress: (word: WordExplanation, segmentIndex: number) => void;
   dimmed: boolean;
 }) {
   const words = explanations[String(segmentIndex)]?.words ?? [];
@@ -71,7 +71,7 @@ function SegmentText({
       );
     }
     parts.push(
-      <Pressable key={`word-${i}`} onPress={() => onWordPress(w)}>
+      <Pressable key={`word-${i}`} onPress={() => onWordPress(w, segmentIndex)}>
         <ThemedText style={[styles.clickableWord, dimmed && styles.dimmed]}>
           {text.slice(w.start_char, w.end_char)}
         </ThemedText>
