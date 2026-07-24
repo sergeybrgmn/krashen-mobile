@@ -159,6 +159,28 @@ export function fetchEpisodeQuestions(
   return fetchJSON(`/api/episode/${episodeId}/questions`, { headers: authHeaders(token) });
 }
 
+// --- Demo (unauthenticated) fetchers ---------------------------------------
+// Mirror the authed endpoints above but hit the public /api/demo/* routes with
+// no Authorization header. They return the same shapes, so guests get the full
+// browse → listen → tap-word experience against the curated demo catalog.
+
+export function fetchDemoPodcasts(): Promise<Podcast[]> {
+  return fetchJSON('/api/demo/podcasts');
+}
+
+export function fetchDemoEpisodes(podcastId: string): Promise<Episode[]> {
+  return fetchJSON(`/api/demo/podcast/${podcastId}/episodes`);
+}
+
+export function fetchDemoEpisodeData(
+  episodeId: string,
+  targetLanguage: string,
+): Promise<EpisodeData> {
+  return fetchJSON(
+    `/api/demo/episode/${episodeId}/data?target_language=${encodeURIComponent(targetLanguage)}`,
+  );
+}
+
 export async function fetchMe(token: string): Promise<Me> {
   const res = await fetch(`${API_BASE_URL}/api/me`, {
     headers: { Authorization: `Bearer ${token}` },

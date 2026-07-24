@@ -1,5 +1,6 @@
 import { useSignIn, useSignUp, useSSO } from '@clerk/clerk-expo';
-import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,6 +15,7 @@ import {
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Radii, Spacing } from '@/constants/theme';
+import { posthog } from '@/services/analytics';
 
 type Mode = 'signIn' | 'signUp';
 
@@ -23,6 +25,7 @@ export default function SignInScreen() {
   const { startSSOFlow } = useSSO();
   const router = useRouter();
   const { t } = useTranslation();
+  const { reason, returnTo } = useLocalSearchParams<{ reason?: string; returnTo?: string }>();
 
   const [mode, setMode] = useState<Mode>('signIn');
   const [email, setEmail] = useState('');
@@ -32,6 +35,36 @@ export default function SignInScreen() {
 
   const isLoaded = signInLoaded && signUpLoaded;
 
+  const reasonText =
+    reason === 'ask'
+      ? t('signIn.reasonAsk')
+      : reason === 'save'
+        ? t('signIn.reasonSave')
+        : null;
+
+  // Return the user to exactly where they were: an explicit returnTo wins,
+  // otherwise dismiss the modal back onto the originating screen; fall back to
+  // Home only when there is no back entry.
+  const finishAuth = useCallback(() => {
+    if (returnTo) {
+      router.replace(returnTo as Href);
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  }, [returnTo, router]);
+
+  // Cancel out of the (now optional) sign-in modal back to anonymous use:
+  // dismiss onto the originating screen, or Home if there is no back entry.
+  const handleClose = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  }, [router]);
+
   async function handleSignIn() {
     if (!signIn || !setSignInActive) return;
     setError('');
@@ -40,7 +73,7 @@ export default function SignInScreen() {
       const result = await signIn.create({ identifier: email, password });
       if (result.status === 'complete') {
         await setSignInActive({ session: result.createdSessionId });
-        router.replace('/');
+        finishAuth();
       }
     } catch (e: unknown) {
       const msg = (e as { errors?: { message: string }[] })?.errors?.[0]?.message;
@@ -61,7 +94,11 @@ export default function SignInScreen() {
       });
       if (result.status === 'complete') {
         await setSignUpActive({ session: result.createdSessionId });
-        router.replace('/');
+        // Explicit email/password sign-up → a brand-new account. (Google SSO
+        // can't be told apart from an existing-user sign-in, so we don't fire
+        // signup_completed there.)
+        posthog?.capture('signup_completed');
+        finishAuth();
       }
     } catch (e: unknown) {
       const msg = (e as { errors?: { message: string }[] })?.errors?.[0]?.message;
@@ -80,7 +117,7 @@ export default function SignInScreen() {
       });
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId });
-        router.replace('/');
+        finishAuth();
       }
     } catch (e: unknown) {
       const msg = (e as { errors?: { message: string }[] })?.errors?.[0]?.message;
@@ -88,7 +125,7 @@ export default function SignInScreen() {
     } finally {
       setLoading(false);
     }
-  }, [startSSOFlow, router, t]);
+  }, [startSSOFlow, finishAuth, t]);
 
   return (
     <KeyboardAvoidingView
@@ -96,9 +133,32 @@ export default function SignInScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.card}>
+        <Pressable
+          style={styles.closeButton}
+          onPress={handleClose}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={t('auth.close')}
+        >
+          <Ionicons name="close" size={24} color={Colors.textSecondary} />
+        </Pressable>
+
         <ThemedText type="title" style={styles.title}>
           {mode === 'signIn' ? t('auth.signIn') : t('auth.signUp')}
         </ThemedText>
+
+        {reasonText && (
+          <>
+            <ThemedText style={styles.reason}>{reasonText}</ThemedText>
+            <View style={styles.ladder}>
+              <ThemedText style={styles.ladderItem}>{t('signIn.ladderGuest')}</ThemedText>
+              <ThemedText style={styles.ladderItem}>{t('signIn.ladderFree')}</ThemedText>
+              <ThemedText style={[styles.ladderItem, styles.ladderPro]}>
+                {t('signIn.ladderPro')}
+              </ThemedText>
+            </View>
+          </>
+        )}
 
         {!!error && <ThemedText style={styles.error}>{error}</ThemedText>}
 
@@ -182,9 +242,38 @@ const styles = StyleSheet.create({
     padding: Spacing.xxl,
     gap: Spacing.lg,
   },
+  closeButton: {
+    position: 'absolute',
+    top: Spacing.md,
+    right: Spacing.md,
+    zIndex: 1,
+    padding: Spacing.xs,
+  },
   title: {
     textAlign: 'center',
     marginBottom: Spacing.sm,
+  },
+  reason: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  ladder: {
+    backgroundColor: Colors.background,
+    borderRadius: Radii.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.md,
+    gap: Spacing.xs,
+  },
+  ladderItem: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  ladderPro: {
+    color: Colors.cyan,
+    fontWeight: '600',
   },
   error: {
     color: Colors.error,

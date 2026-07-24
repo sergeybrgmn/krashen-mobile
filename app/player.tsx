@@ -1,7 +1,8 @@
 import { useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -14,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnswerModal } from '@/components/answer-modal';
 import { AskControls } from '@/components/ask-controls';
+import { CoachMark, COACHMARK_STORAGE_KEY, type CoachStep } from '@/components/coach-mark';
 import { ErrorModal } from '@/components/error-modal';
 import { QuestionHistoryModal } from '@/components/question-history-modal';
 import { LanguageChoiceModal } from '@/components/language-choice-modal';
@@ -41,6 +43,8 @@ import {
   Episode,
   Podcast,
   WordExplanation,
+  fetchDemoEpisodes,
+  fetchDemoPodcasts,
   fetchPodcasts,
   fetchEpisodes,
 } from '@/services/api';
@@ -55,7 +59,7 @@ export default function PlayerScreen() {
     targetLanguage: string;
   }>();
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   const { t, i18n } = useTranslation();
 
   const [podcast, setPodcast] = useState<Podcast | null>(null);
@@ -99,8 +103,26 @@ export default function PlayerScreen() {
     message: string;
     isAuth: boolean;
   } | null>(null);
+  // Guest tapped save → show the inline PRO/sign-up prompt inside the word modal.
+  const [guestSavePromptVisible, setGuestSavePromptVisible] = useState(false);
+  const [coachVisible, setCoachVisible] = useState(false);
+
+  // Coachmark targets, measured on the player.
+  const transcriptRef = useRef<View | null>(null);
+  const askRef = useRef<View | null>(null);
 
   useWakeLock(player.isPlaying || recorder.isRecording);
+
+  // Preserve where the guest is so they return to this exact episode after
+  // signing in from a gate.
+  const buildReturnTo = useCallback((): string => {
+    const parts: string[] = [];
+    if (podcastId) parts.push(`podcastId=${encodeURIComponent(podcastId)}`);
+    if (episodeId) parts.push(`episodeId=${encodeURIComponent(episodeId)}`);
+    const lang = targetLanguage ?? '';
+    if (lang) parts.push(`targetLanguage=${encodeURIComponent(lang)}`);
+    return `/player${parts.length > 0 ? `?${parts.join('&')}` : ''}`;
+  }, [podcastId, episodeId, targetLanguage]);
 
   const deviceLocale = useMemo(() => getDeviceLanguageCode(), []);
   const responseLanguage = me?.response_language ?? deviceLocale;
@@ -115,21 +137,35 @@ export default function PlayerScreen() {
     setMetaLoading(true);
 
     (async () => {
-      const jwtTemplate = process.env.EXPO_PUBLIC_CLERK_JWT_TEMPLATE;
-      const token = await getToken(jwtTemplate ? { template: jwtTemplate } : undefined);
-      if (!token) {
-        if (!cancelled) setMetaLoading(false);
-        return;
+      // Signed in → authed metadata; signed out → the public demo metadata so
+      // guests can browse/listen with no account and no wall.
+      let podcasts: Podcast[];
+      let episodes: Episode[];
+      if (isSignedIn) {
+        const jwtTemplate = process.env.EXPO_PUBLIC_CLERK_JWT_TEMPLATE;
+        const token = await getToken(jwtTemplate ? { template: jwtTemplate } : undefined);
+        if (!token) {
+          if (!cancelled) setMetaLoading(false);
+          return;
+        }
+        [podcasts, episodes] = await Promise.all([
+          fetchPodcasts(token),
+          fetchEpisodes(token, podcastId),
+        ]);
+      } else {
+        [podcasts, episodes] = await Promise.all([
+          fetchDemoPodcasts(),
+          fetchDemoEpisodes(podcastId),
+        ]);
       }
-      const [podcasts, episodes] = await Promise.all([
-        fetchPodcasts(token),
-        fetchEpisodes(token, podcastId),
-      ]);
       if (cancelled) return;
       setPodcast(podcasts.find((p) => p.id === podcastId) ?? null);
       const ep = episodes.find((e) => e.id === episodeId) ?? null;
       setEpisode(ep);
       setMetaLoading(false);
+      if (!isSignedIn) {
+        posthog?.capture('demo_episode_opened', { episode_id: episodeId });
+      }
       if (ep?.audio_url) {
         player.load(ep.audio_url);
         posthog?.capture('episode_started', {
@@ -144,12 +180,14 @@ export default function PlayerScreen() {
       cancelled = true;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [podcastId, episodeId]);
+  }, [podcastId, episodeId, isSignedIn]);
 
   // Pro-required episode: present paywall. On purchase, refresh /me so future
   // fetches see the new subscription state, and retry the data fetch.
   useEffect(() => {
-    if (!proRequired) return;
+    // Guests never hit proRequired (demo episodes resolve normally); the paywall
+    // must never be presented while signed out.
+    if (!proRequired || !isSignedIn) return;
     let cancelled = false;
     (async () => {
       const purchased = await presentPaywall();
@@ -164,16 +202,57 @@ export default function PlayerScreen() {
     return () => {
       cancelled = true;
     };
-  }, [proRequired, presentPaywall, refetchMe, refetchEpisodeData, router]);
+  }, [proRequired, isSignedIn, presentPaywall, refetchMe, refetchEpisodeData, router]);
+
+  // Coachmark: first time a guest opens a demo episode, teach the two gestures.
+  // Gated once-only by AsyncStorage; shown after metadata resolves so targets
+  // are laid out and measurable.
+  useEffect(() => {
+    if (isSignedIn || metaLoading) return;
+    let cancelled = false;
+    AsyncStorage.getItem(COACHMARK_STORAGE_KEY).then((seen) => {
+      if (!cancelled && !seen) setCoachVisible(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn, metaLoading]);
+
+  const coachSteps = useMemo<CoachStep[]>(
+    () => [
+      { targetRef: transcriptRef, caption: t('coach.tapWord') },
+      { targetRef: askRef, caption: t('coach.askQuestion') },
+    ],
+    [t],
+  );
 
   const handleWordPress = useCallback((word: WordExplanation, segmentIndex: number) => {
     setSelectedWord({ word, segmentIndex });
+    setGuestSavePromptVisible(false);
     posthog?.capture('word_tapped', {
       word: word.surface,
       episode_id: episodeId,
       target_language: targetLanguage,
     });
+    // Funnel step: fires for guests too (demo explanations resolve normally).
+    posthog?.capture('word_explanation_viewed', { target_language: targetLanguage });
   }, [episodeId, targetLanguage]);
+
+  const handleCloseWord = useCallback(() => {
+    setSelectedWord(null);
+    setGuestSavePromptVisible(false);
+  }, []);
+
+  // Guest chose to sign up from the save prompt → contextual sign-in (save).
+  const handleGuestSaveCta = useCallback(() => {
+    posthog?.capture('signup_started', { trigger: 'save' });
+    setGuestSavePromptVisible(false);
+    setSelectedWord(null);
+    router.push({
+      pathname: '/sign-in',
+      params: { reason: 'save', returnTo: buildReturnTo() },
+    });
+  }, [router, buildReturnTo]);
 
   // Save/unsave the word currently open in the modal. Unsaving is free; saving
   // requires PRO — gate on the known /me state, and (edge) retry after the
@@ -181,6 +260,18 @@ export default function PlayerScreen() {
   const handleToggleSave = useCallback(async () => {
     if (!selectedWord) return;
     const { word, segmentIndex } = selectedWord;
+
+    // Guest: staged toward signup, never the paywall. Show the PRO-feature
+    // message inline; the CTA routes to contextual sign-in (reason=save).
+    if (!isSignedIn) {
+      posthog?.capture('save_gate_shown_guest', {
+        episode_id: episodeId,
+        target_language: targetLanguage,
+      });
+      setGuestSavePromptVisible(true);
+      return;
+    }
+
     const key = `${segmentIndex}:${word.start_char}`;
     const existing = savedByKey.get(key);
 
@@ -233,6 +324,7 @@ export default function PlayerScreen() {
     }
   }, [
     selectedWord,
+    isSignedIn,
     savedByKey,
     removeWordFromVocab,
     me,
@@ -254,6 +346,19 @@ export default function PlayerScreen() {
 
   // Ask flow — gate on subscription/quota before recording.
   const handleAskStart = useCallback(async () => {
+    // Guest: don't record. Route to contextual sign-in (reason=ask); after
+    // signing up they land back here with 3 free questions ready to spend.
+    if (!isSignedIn) {
+      posthog?.capture('ask_gate_shown_guest', { episode_id: episodeId });
+      posthog?.capture('signup_started', { trigger: 'ask' });
+      router.push({
+        pathname: '/sign-in',
+        params: { reason: 'ask', returnTo: buildReturnTo() },
+      });
+      return;
+    }
+
+    // Signed-in free user at 0 questions → paywall (backend owns the quota).
     if (!me?.is_subscribed && (me?.questions_left ?? 0) <= 0) {
       const purchased = await presentPaywall();
       if (!purchased) return;
@@ -271,7 +376,7 @@ export default function PlayerScreen() {
         isAuth: false,
       });
     }
-  }, [me, player, recorder, presentPaywall, refetchMe, t]);
+  }, [isSignedIn, episodeId, router, buildReturnTo, me, player, recorder, presentPaywall, refetchMe, t]);
 
   const handleAskCancel = useCallback(() => {
     recorder.cancel();
@@ -412,19 +517,26 @@ export default function PlayerScreen() {
         />
 
         {/* Ask Controls */}
-        <AskControls
-          isRecording={recorder.isRecording}
-          isSubmitting={askQuestion.isSubmitting}
-          awaitingConfirmation={!!pendingRecordingUri}
-          disabled={!episodeId}
-          elapsedMs={recorder.elapsedMs}
-          maxDurationMs={MAX_RECORDING_MS}
-          onStart={handleAskStart}
-          onCancel={handleAskCancel}
-          onSend={handleAskSend}
-          onRedo={handleRedo}
-          onConfirmSend={handleConfirmSend}
-        />
+        <View ref={askRef} collapsable={false}>
+          <AskControls
+            isRecording={recorder.isRecording}
+            isSubmitting={askQuestion.isSubmitting}
+            awaitingConfirmation={!!pendingRecordingUri}
+            disabled={!episodeId}
+            elapsedMs={recorder.elapsedMs}
+            maxDurationMs={MAX_RECORDING_MS}
+            onStart={handleAskStart}
+            onCancel={handleAskCancel}
+            onSend={handleAskSend}
+            onRedo={handleRedo}
+            onConfirmSend={handleConfirmSend}
+          />
+          {!isSignedIn && !recorder.isRecording && !pendingRecordingUri && (
+            <ThemedText style={styles.askGuestPrompt}>
+              {t('player.askGuestPrompt')}
+            </ThemedText>
+          )}
+        </View>
 
         {/* Explanation language chip — only when the user has a real choice */}
         {targetLanguage && canChangeExplanation && (
@@ -444,13 +556,15 @@ export default function PlayerScreen() {
 
         {/* Transcript */}
         {(segments.length > 0 || dataLoading) && (
-          <TranscriptPanel
-            segments={segments}
-            explanations={explanations}
-            currentTime={player.position}
-            loading={dataLoading}
-            onWordPress={handleWordPress}
-          />
+          <View ref={transcriptRef} collapsable={false}>
+            <TranscriptPanel
+              segments={segments}
+              explanations={explanations}
+              currentTime={player.position}
+              loading={dataLoading}
+              onWordPress={handleWordPress}
+            />
+          </View>
         )}
       </ScrollView>
 
@@ -468,7 +582,7 @@ export default function PlayerScreen() {
       <WordExplanationModal
         word={selectedWord?.word ?? null}
         targetLanguage={targetLanguage ?? undefined}
-        onClose={() => setSelectedWord(null)}
+        onClose={handleCloseWord}
         isSaved={
           selectedWord
             ? savedByKey.has(`${selectedWord.segmentIndex}:${selectedWord.word.start_char}`)
@@ -476,6 +590,8 @@ export default function PlayerScreen() {
         }
         onToggleSave={handleToggleSave}
         savePending={savePending}
+        guestSaveMessage={guestSavePromptVisible ? t('wordModal.guestSavePrompt') : null}
+        onGuestSaveCta={handleGuestSaveCta}
       />
 
       {/* Explanation Language Picker */}
@@ -504,6 +620,11 @@ export default function PlayerScreen() {
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
       />
+
+      {/* First-run coachmark (guests only, once) */}
+      {coachVisible && (
+        <CoachMark steps={coachSteps} onDismiss={() => setCoachVisible(false)} />
+      )}
     </SafeAreaView>
   );
 }
@@ -556,5 +677,12 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 13,
     color: Colors.textSecondary,
+  },
+  askGuestPrompt: {
+    marginTop: Spacing.md,
+    fontSize: 13,
+    lineHeight: 18,
+    color: Colors.textMuted,
+    textAlign: 'center',
   },
 });

@@ -1,7 +1,7 @@
 import { useAuth } from '@clerk/clerk-expo';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { fetchPodcasts, Podcast } from '@/services/api';
+import { fetchDemoPodcasts, fetchPodcasts, Podcast } from '@/services/api';
 import { useAuthToken } from '@/hooks/use-auth-token';
 
 export function usePodcasts() {
@@ -11,28 +11,34 @@ export function usePodcasts() {
   const getToken = useAuthToken();
   const { isLoaded, isSignedIn } = useAuth();
 
-  const refetch = useCallback(async () => {
-    if (!isLoaded || !isSignedIn) return;
-    try {
+  // Signed in → authed catalog; signed out → the public demo catalog.
+  const load = useCallback(async (): Promise<Podcast[]> => {
+    if (isSignedIn) {
       const token = await getToken();
       if (!token) throw new Error('Not signed in');
-      const data = await fetchPodcasts(token);
+      return fetchPodcasts(token);
+    }
+    return fetchDemoPodcasts();
+  }, [getToken, isSignedIn]);
+
+  const refetch = useCallback(async () => {
+    if (!isLoaded) return;
+    try {
+      const data = await load();
       setPodcasts(data);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
     }
-  }, [getToken, isLoaded, isSignedIn]);
+  }, [load, isLoaded]);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
+    if (!isLoaded) return;
     let cancelled = false;
     setLoading(true);
     (async () => {
       try {
-        const token = await getToken();
-        if (!token) throw new Error('Not signed in');
-        const data = await fetchPodcasts(token);
+        const data = await load();
         if (!cancelled) setPodcasts(data);
       } catch (e) {
         if (!cancelled) setError((e as Error).message);
@@ -43,7 +49,7 @@ export function usePodcasts() {
     return () => {
       cancelled = true;
     };
-  }, [getToken, isLoaded, isSignedIn]);
+  }, [load, isLoaded]);
 
   const languages = useMemo(() => {
     const codes = new Set(podcasts.map((p) => p.language.toLowerCase()));

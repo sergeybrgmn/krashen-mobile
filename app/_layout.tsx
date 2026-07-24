@@ -1,7 +1,7 @@
 import { ClerkProvider, useAuth, useUser } from '@clerk/clerk-expo';
 import { enUS, esES } from '@clerk/localizations';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useRef } from 'react';
@@ -31,20 +31,10 @@ configureCrisp();
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded, userId } = useAuth();
   const { user } = useUser();
-  const segments = useSegments();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (!isLoaded) return;
-
-    const onSignIn = segments[0] === 'sign-in';
-
-    if (!isSignedIn && !onSignIn) {
-      router.replace('/sign-in');
-    } else if (isSignedIn && onSignIn) {
-      router.replace('/');
-    }
-  }, [isSignedIn, isLoaded, segments, router]);
+  // No cold-boot wall: signed-out users land on `index` (Home) in demo mode.
+  // `/sign-in` is now intent-driven (presented as a modal from the gates) and
+  // handles its own return navigation, so there is no redirect effect here.
 
   useEffect(() => {
     if (isLoaded) {
@@ -107,7 +97,7 @@ export default function RootLayout() {
               <Stack.Screen name="about" />
               <Stack.Screen name="privacy" />
               <Stack.Screen name="terms" />
-              <Stack.Screen name="sign-in" />
+              <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
             </Stack>
           </AuthGate>
           <StatusBar style="light" />

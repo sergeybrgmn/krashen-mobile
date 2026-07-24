@@ -21,7 +21,8 @@
     "backToEpisodes": "← Volver a los episodios",
     "explanationsChip": "Explicaciones: {{language}}",
     "audioUnavailable": "Audio del episodio no disponible.",
-    "loadingAudio": "Cargando audio..."
+    "loadingAudio": "Cargando audio...",
+    "askGuestPrompt": "Pregunta sobre cualquier cosa que no hayas entendido: Krashen responde al instante."
   },
   "ask": {
     "button": "Preguntar",
@@ -45,7 +46,25 @@
     "usageNotes": "Notas de uso",
     "example": "Ejemplo",
     "save": "Guardar palabra",
-    "saved": "Guardada"
+    "saved": "Guardada",
+    "guestSavePrompt": "Guardar palabras en tu vocabulario es una función PRO. Primero, crea tu cuenta gratis."
+  },
+  "signIn": {
+    "reasonAsk": "Crea una cuenta gratis para hacer tu primera pregunta: 3 de regalo.",
+    "reasonSave": "Crea una cuenta gratis para empezar a construir tu vocabulario.",
+    "ladderGuest": "Invitado: escucha y toca palabras",
+    "ladderFree": "Gratis: + haz 3 preguntas",
+    "ladderPro": "PRO: preguntas y palabras guardadas ilimitadas"
+  },
+  "coach": {
+    "tapWord": "Toca cualquier palabra para ver su significado.",
+    "askQuestion": "Pregunta sobre cualquier cosa que no hayas entendido.",
+    "skip": "Omitir",
+    "next": "Siguiente",
+    "gotIt": "Entendido"
+  },
+  "drawer": {
+    "signInCta": "Iniciar sesión / Crear cuenta"
   },
   "vocabulary": {
     "title": "Mis palabras",
@@ -94,7 +113,8 @@
     "hasAccount": "¿Ya tienes cuenta? Inicia sesión",
     "signInFailed": "Error al iniciar sesión.",
     "signUpFailed": "Error al registrarse.",
-    "googleFailed": "Error al iniciar sesión con Google."
+    "googleFailed": "Error al iniciar sesión con Google.",
+    "close": "Cerrar"
   },
   "errors": {
     "micPermission": "Permiso de micrófono denegado o no disponible.",

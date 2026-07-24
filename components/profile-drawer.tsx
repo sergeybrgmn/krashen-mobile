@@ -16,9 +16,10 @@ import { LanguageChoiceModal } from '@/components/language-choice-modal';
 import { ThemedText } from '@/components/themed-text';
 import { getDeviceLanguageCode } from '@/constants/device-locale';
 import { LANGUAGES, getLanguageName } from '@/constants/languages';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Radii, Spacing } from '@/constants/theme';
 import { useConsent } from '@/hooks/use-consent';
 import { useMe } from '@/hooks/use-me';
+import { posthog } from '@/services/analytics';
 import { updateMe } from '@/services/api';
 import { setUiLanguage, SUPPORTED_UI_LANGUAGES, UiLanguage } from '@/services/i18n';
 
@@ -43,7 +44,7 @@ function formatDate(iso: string | null | undefined, locale: string): string {
 
 export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   const { user } = useUser();
-  const { getToken, signOut } = useAuth();
+  const { getToken, signOut, isSignedIn } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { me, loading: meLoading, refetch: refetchMe } = useMe();
@@ -132,6 +133,24 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
     [getToken, refetchMe],
   );
 
+  // Guest CTA — route to the contextual sign-in. Dismissing the modal returns
+  // to wherever the drawer was opened from (Home or the player).
+  const handleGuestSignIn = useCallback(() => {
+    onClose();
+    posthog?.capture('signup_started', { trigger: 'drawer' });
+    router.push('/sign-in');
+  }, [onClose, router]);
+
+  const handleMyWords = useCallback(() => {
+    onClose();
+    if (isSignedIn) {
+      router.push('/vocabulary');
+    } else {
+      posthog?.capture('signup_started', { trigger: 'vocabulary' });
+      router.push({ pathname: '/sign-in', params: { returnTo: '/vocabulary' } });
+    }
+  }, [onClose, isSignedIn, router]);
+
   const translateX = useSharedValue(-DRAWER_WIDTH);
   const backdropOpacity = useSharedValue(0);
 
@@ -166,17 +185,27 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
       <Animated.View
         style={[styles.drawer, drawerStyle, { paddingTop: insets.top + Spacing.xl }]}
       >
-        {/* User info */}
-        <View style={styles.userSection}>
-          <ThemedText type="subtitle">{fullName}</ThemedText>
-          {email ? (
-            <ThemedText type="small" style={styles.email}>
-              {email}
-            </ThemedText>
-          ) : null}
-        </View>
+        {/* User info — guests get a sign-in / create-account CTA instead. */}
+        {isSignedIn ? (
+          <View style={styles.userSection}>
+            <ThemedText type="subtitle">{fullName}</ThemedText>
+            {email ? (
+              <ThemedText type="small" style={styles.email}>
+                {email}
+              </ThemedText>
+            ) : null}
+          </View>
+        ) : (
+          <View style={styles.userSection}>
+            <Pressable style={styles.signInCta} onPress={handleGuestSignIn}>
+              <Ionicons name="log-in-outline" size={20} color={Colors.black} />
+              <ThemedText style={styles.signInCtaText}>{t('drawer.signInCta')}</ThemedText>
+            </Pressable>
+          </View>
+        )}
 
-        {/* Plan & Quota */}
+        {/* Plan & Quota — signed-in only */}
+        {isSignedIn && (
         <View style={styles.quotaSection}>
           <View>
             <ThemedText type="small" style={styles.quotaLabel}>
@@ -206,16 +235,11 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
             </ThemedText>
           </View>
         </View>
+        )}
 
         {/* Menu */}
         <View style={styles.menuSection}>
-          <Pressable
-            style={styles.menuItem}
-            onPress={() => {
-              onClose();
-              router.push('/vocabulary');
-            }}
-          >
+          <Pressable style={styles.menuItem} onPress={handleMyWords}>
             <Ionicons name="book-outline" size={20} color={Colors.textSecondary} />
             <ThemedText style={styles.menuItemText}>{t('profile.myWords')}</ThemedText>
           </Pressable>
@@ -238,64 +262,69 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
             </View>
           </Pressable>
 
-          <Pressable
-            style={styles.menuItem}
-            onPress={() => setResponseLangPickerVisible(true)}
-            disabled={savingResponseLang}
-          >
-            {savingResponseLang ? (
-              <ActivityIndicator size="small" color={Colors.cyan} />
-            ) : (
-              <Ionicons name="chatbubble-ellipses-outline" size={20} color={Colors.textSecondary} />
-            )}
-            <View style={styles.responseLangRow}>
-              <View style={styles.responseLangLabels}>
-                <ThemedText style={styles.menuItemText}>{t('profile.responseLanguage')}</ThemedText>
-                <ThemedText type="small" style={styles.responseLangHint}>
-                  {t('profile.responseLanguageHint')}
-                </ThemedText>
-              </View>
-              <ThemedText style={styles.responseLangValue}>
-                {getLanguageName(responseLanguage)}
-              </ThemedText>
-            </View>
-          </Pressable>
+          {/* Account-scoped settings — signed-in only (need an auth token). */}
+          {isSignedIn && (
+            <>
+              <Pressable
+                style={styles.menuItem}
+                onPress={() => setResponseLangPickerVisible(true)}
+                disabled={savingResponseLang}
+              >
+                {savingResponseLang ? (
+                  <ActivityIndicator size="small" color={Colors.cyan} />
+                ) : (
+                  <Ionicons name="chatbubble-ellipses-outline" size={20} color={Colors.textSecondary} />
+                )}
+                <View style={styles.responseLangRow}>
+                  <View style={styles.responseLangLabels}>
+                    <ThemedText style={styles.menuItemText}>{t('profile.responseLanguage')}</ThemedText>
+                    <ThemedText type="small" style={styles.responseLangHint}>
+                      {t('profile.responseLanguageHint')}
+                    </ThemedText>
+                  </View>
+                  <ThemedText style={styles.responseLangValue}>
+                    {getLanguageName(responseLanguage)}
+                  </ThemedText>
+                </View>
+              </Pressable>
 
-          <View style={styles.menuItem}>
-            {savingFluent ? (
-              <ActivityIndicator size="small" color={Colors.cyan} />
-            ) : (
-              <Ionicons name="sparkles-outline" size={20} color={Colors.textSecondary} />
-            )}
-            <View style={styles.fluentRow}>
-              <View style={styles.fluentLabels}>
-                <ThemedText style={styles.menuItemText}>{t('profile.fluentMode')}</ThemedText>
-                <ThemedText type="small" style={styles.fluentHint}>
-                  {t('profile.fluentModeHint')}
-                </ThemedText>
+              <View style={styles.menuItem}>
+                {savingFluent ? (
+                  <ActivityIndicator size="small" color={Colors.cyan} />
+                ) : (
+                  <Ionicons name="sparkles-outline" size={20} color={Colors.textSecondary} />
+                )}
+                <View style={styles.fluentRow}>
+                  <View style={styles.fluentLabels}>
+                    <ThemedText style={styles.menuItemText}>{t('profile.fluentMode')}</ThemedText>
+                    <ThemedText type="small" style={styles.fluentHint}>
+                      {t('profile.fluentModeHint')}
+                    </ThemedText>
+                  </View>
+                  <Switch
+                    value={me?.fluent_mode ?? false}
+                    onValueChange={handleFluentToggle}
+                    disabled={savingFluent || !me}
+                    trackColor={{ false: Colors.border, true: Colors.cyan }}
+                    thumbColor={Colors.white}
+                  />
+                </View>
               </View>
-              <Switch
-                value={me?.fluent_mode ?? false}
-                onValueChange={handleFluentToggle}
-                disabled={savingFluent || !me}
-                trackColor={{ false: Colors.border, true: Colors.cyan }}
-                thumbColor={Colors.white}
-              />
-            </View>
-          </View>
 
-          <Pressable
-            style={styles.menuItem}
-            onPress={handleRestore}
-            disabled={restoring}
-          >
-            {restoring ? (
-              <ActivityIndicator size="small" color={Colors.cyan} />
-            ) : (
-              <Ionicons name="refresh-outline" size={20} color={Colors.textSecondary} />
-            )}
-            <ThemedText style={styles.menuItemText}>{t('profile.restorePurchases')}</ThemedText>
-          </Pressable>
+              <Pressable
+                style={styles.menuItem}
+                onPress={handleRestore}
+                disabled={restoring}
+              >
+                {restoring ? (
+                  <ActivityIndicator size="small" color={Colors.cyan} />
+                ) : (
+                  <Ionicons name="refresh-outline" size={20} color={Colors.textSecondary} />
+                )}
+                <ThemedText style={styles.menuItemText}>{t('profile.restorePurchases')}</ThemedText>
+              </Pressable>
+            </>
+          )}
 
           <View style={styles.menuItem}>
             <Ionicons name="stats-chart-outline" size={20} color={Colors.textSecondary} />
@@ -316,16 +345,18 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
           </View>
         </View>
 
-        {/* Sign out */}
-        <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.xl }]}>
-          <Pressable
-            style={styles.signOutButton}
-            onPress={() => signOut()}
-          >
-            <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-            <ThemedText style={styles.signOutText}>{t('profile.signOut')}</ThemedText>
-          </Pressable>
-        </View>
+        {/* Sign out — signed-in only (guests have no session). */}
+        {isSignedIn && (
+          <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.xl }]}>
+            <Pressable
+              style={styles.signOutButton}
+              onPress={() => signOut()}
+            >
+              <Ionicons name="log-out-outline" size={20} color={Colors.error} />
+              <ThemedText style={styles.signOutText}>{t('profile.signOut')}</ThemedText>
+            </Pressable>
+          </View>
+        )}
       </Animated.View>
 
       <LanguageChoiceModal
@@ -371,6 +402,21 @@ const styles = StyleSheet.create({
   },
   email: {
     marginTop: Spacing.xs,
+  },
+  signInCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.cyan,
+    borderRadius: Radii.pill,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+  },
+  signInCtaText: {
+    color: Colors.black,
+    fontSize: 15,
+    fontWeight: '700',
   },
   quotaSection: {
     flexDirection: 'row',

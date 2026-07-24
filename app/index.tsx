@@ -1,5 +1,6 @@
+import { useAuth } from '@clerk/clerk-expo';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -26,10 +27,12 @@ import { useMe } from '@/hooks/use-me';
 import { usePaywall } from '@/hooks/use-paywall';
 import { usePodcasts } from '@/hooks/use-podcasts';
 import { Episode, Podcast } from '@/services/api';
+import { posthog } from '@/services/analytics';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { isLoaded, isSignedIn } = useAuth();
   const {
     podcasts,
     loading: podcastsLoading,
@@ -77,6 +80,15 @@ export default function HomeScreen() {
   const [pendingEpisode, setPendingEpisode] = useState<Episode | null>(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
 
+  // A guest reaching Home is the top of the demo funnel — fire once per session.
+  const demoEnteredRef = useRef(false);
+  useEffect(() => {
+    if (isLoaded && !isSignedIn && !demoEnteredRef.current) {
+      demoEnteredRef.current = true;
+      posthog?.capture('demo_mode_entered');
+    }
+  }, [isLoaded, isSignedIn]);
+
   const filteredPodcasts = useMemo(() => {
     if (!languageFilter) return podcasts;
     return podcasts.filter(
@@ -122,8 +134,10 @@ export default function HomeScreen() {
       if (!selectedPodcast || !explanationLangLoaded) return;
 
       // Gate PRO-locked episodes upfront so unprocessed-but-valuable episodes
-      // (transcript only, no explanations) still surface the paywall.
-      if (!episode.is_free && !me?.is_subscribed) {
+      // (transcript only, no explanations) still surface the paywall. Guests are
+      // in demo mode — never show them a paywall; the curated demo episodes open
+      // directly (PRO badges are cosmetic for a guest).
+      if (isSignedIn && !episode.is_free && !me?.is_subscribed) {
         const purchased = await presentPaywall();
         if (!purchased) return;
         await refetchMe();
@@ -152,7 +166,7 @@ export default function HomeScreen() {
       setPendingEpisode(episode);
       setPickerVisible(true);
     },
-    [selectedPodcast, explanationLanguage, explanationLangLoaded, saveExplanationLanguage, openPlayer, me, presentPaywall, refetchMe],
+    [selectedPodcast, explanationLanguage, explanationLangLoaded, saveExplanationLanguage, openPlayer, me, presentPaywall, refetchMe, isSignedIn],
   );
 
   const handlePickerConfirm = useCallback(

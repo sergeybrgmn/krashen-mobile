@@ -16,6 +16,10 @@ interface Props {
   isSaved?: boolean;
   onToggleSave?: () => void;
   savePending?: boolean;
+  /** When set (guest tapped save), an inline "PRO feature — create an account"
+   * prompt with a sign-in CTA is shown in place of a paywall. */
+  guestSaveMessage?: string | null;
+  onGuestSaveCta?: () => void;
 }
 
 interface PosBadge {
@@ -71,6 +75,8 @@ export function WordExplanationModal({
   isSaved,
   onToggleSave,
   savePending,
+  guestSaveMessage,
+  onGuestSaveCta,
 }: Props) {
   const { t } = useTranslation();
   const posBadges = word ? getPosBadges(word.tokens, targetLanguage ?? 'en') : [];
@@ -135,6 +141,17 @@ export function WordExplanationModal({
                   <ThemedText style={styles.close}>✕</ThemedText>
                 </Pressable>
               </View>
+
+              {guestSaveMessage ? (
+                <View style={styles.guestPrompt}>
+                  <ThemedText style={styles.guestPromptText}>{guestSaveMessage}</ThemedText>
+                  <Pressable style={styles.guestPromptCta} onPress={onGuestSaveCta}>
+                    <ThemedText style={styles.guestPromptCtaText}>
+                      {t('drawer.signInCta')}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              ) : null}
 
               <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
                 <Field label={t('wordModal.translation')} value={word.translation} />
@@ -210,6 +227,32 @@ const styles = StyleSheet.create({
   },
   italic: {
     fontStyle: 'italic',
+  },
+  guestPrompt: {
+    backgroundColor: Colors.background,
+    borderRadius: Radii.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    gap: Spacing.md,
+  },
+  guestPromptText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: Colors.textPrimary,
+  },
+  guestPromptCta: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.cyan,
+    borderRadius: Radii.pill,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.sm,
+  },
+  guestPromptCtaText: {
+    color: Colors.black,
+    fontSize: 14,
+    fontWeight: '700',
   },
   posBadges: {
     flexDirection: 'row',

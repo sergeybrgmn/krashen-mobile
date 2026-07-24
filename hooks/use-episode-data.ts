@@ -6,6 +6,7 @@ import {
   EpisodeData,
   Segment,
   WordExplanation,
+  fetchDemoEpisodeData,
   fetchEpisodeData,
 } from '@/services/api';
 import { useAuthToken } from '@/hooks/use-auth-token';
@@ -30,7 +31,7 @@ export function useEpisodeData(episodeId: string | null, targetLanguage: string 
       setProRequired(false);
       return;
     }
-    if (!isLoaded || !isSignedIn) return;
+    if (!isLoaded) return;
 
     let cancelled = false;
     setLoading(true);
@@ -39,11 +40,18 @@ export function useEpisodeData(episodeId: string | null, targetLanguage: string 
 
     (async () => {
       try {
-        const token = await getToken();
-        if (!token) throw new Error('Not signed in');
         // No target language → backend returns segments only (null explanations);
         // the raw transcript still has value during playback.
-        const data = await fetchEpisodeData(token, episodeId, targetLanguage ?? '');
+        // Signed in → authed data; signed out → the public demo data (guests
+        // only ever open demo episodes, which resolve normally — no proRequired).
+        let data: EpisodeData;
+        if (isSignedIn) {
+          const token = await getToken();
+          if (!token) throw new Error('Not signed in');
+          data = await fetchEpisodeData(token, episodeId, targetLanguage ?? '');
+        } else {
+          data = await fetchDemoEpisodeData(episodeId, targetLanguage ?? '');
+        }
         if (cancelled) return;
         setSegments(data.segments ?? []);
         setExplanations(data.explanations ?? {});

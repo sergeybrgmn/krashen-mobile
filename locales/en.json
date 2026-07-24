@@ -21,7 +21,8 @@
     "backToEpisodes": "← Back to episodes",
     "explanationsChip": "Explanations: {{language}}",
     "audioUnavailable": "Episode audio unavailable.",
-    "loadingAudio": "Loading audio..."
+    "loadingAudio": "Loading audio...",
+    "askGuestPrompt": "Ask about anything you didn't catch — Krashen answers instantly."
   },
   "ask": {
     "button": "Ask",
@@ -45,7 +46,25 @@
     "usageNotes": "Usage notes",
     "example": "Example",
     "save": "Save word",
-    "saved": "Saved"
+    "saved": "Saved",
+    "guestSavePrompt": "Saving words to your vocabulary is a PRO feature. First, create your free account."
+  },
+  "signIn": {
+    "reasonAsk": "Create a free account to ask your first question — 3 on the house.",
+    "reasonSave": "Create a free account to start building your vocabulary.",
+    "ladderGuest": "Guest — listen & tap words",
+    "ladderFree": "Free — + ask 3 questions",
+    "ladderPro": "PRO — unlimited questions & saved words"
+  },
+  "coach": {
+    "tapWord": "Tap any word to see what it means.",
+    "askQuestion": "Ask about anything you didn't catch.",
+    "skip": "Skip",
+    "next": "Next",
+    "gotIt": "Got it"
+  },
+  "drawer": {
+    "signInCta": "Sign in / Create account"
   },
   "vocabulary": {
     "title": "My Words",
@@ -94,7 +113,8 @@
     "hasAccount": "Already have an account? Sign In",
     "signInFailed": "Sign in failed.",
     "signUpFailed": "Sign up failed.",
-    "googleFailed": "Google sign in failed."
+    "googleFailed": "Google sign in failed.",
+    "close": "Close"
   },
   "errors": {
     "micPermission": "Microphone permission denied or unavailable.",
