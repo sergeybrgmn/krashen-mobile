@@ -217,6 +217,22 @@ export async function updateMe(
   return res.json();
 }
 
+/** Permanently delete the signed-in user's account — app data and the Clerk
+ * auth record, server-side and all-or-nothing. Answers 204 with an empty body,
+ * so this doesn't route through fetchJSON. Callers must sign out afterwards:
+ * the session's token now refers to a user that no longer exists. */
+export async function deleteMe(token: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/me`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  if (!res.ok) {
+    const err = new Error(`API ${res.status}`) as ApiError;
+    err.status = res.status;
+    throw err;
+  }
+}
+
 export async function submitQuestion(
   token: string,
   episodeId: string,

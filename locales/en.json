@@ -54,7 +54,7 @@
     "reasonSave": "Create a free account to start building your vocabulary.",
     "ladderGuest": "Guest — listen & tap words",
     "ladderFree": "Free — + ask 3 questions",
-    "ladderPro": "PRO — unlimited questions & saved words"
+    "ladderPro": "PRO — 100 questions a week & saved words"
   },
   "coach": {
     "tapWord": "Tap any word to see what it means.",
@@ -100,7 +100,19 @@
     "restorePurchases": "Restore Purchases",
     "shareAnalytics": "Share analytics",
     "shareAnalyticsHint": "Helps us improve Krashen",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "deleteAccount": "Delete Account"
+  },
+  "deleteAccount": {
+    "title": "Delete account?",
+    "message": "This permanently deletes your account, your saved words and your question history. It cannot be undone.",
+    "subscriptionNote": "Your subscription is billed by Apple and is not cancelled by deleting your account. To stop billing, cancel it in Settings › Apple Account › Subscriptions.",
+    "continue": "Continue",
+    "confirmTitle": "Are you sure?",
+    "confirmMessage": "Your account and all of its data will be removed immediately. This is permanent.",
+    "confirmButton": "Delete Account",
+    "failedTitle": "Couldn't delete account",
+    "failed": "We couldn't delete your account. Nothing was removed. Please check your connection and try again."
   },
   "auth": {
     "signIn": "Sign In",
@@ -113,7 +125,21 @@
     "hasAccount": "Already have an account? Sign In",
     "signInFailed": "Sign in failed.",
     "signUpFailed": "Sign up failed.",
+    "signInIncomplete": "We couldn't finish signing you in. Try again, or continue with Apple or Google.",
+    "signUpIncomplete": "We couldn't finish creating your account. Try again, or continue with Apple or Google.",
+    "notReady": "Still getting ready — please try again in a moment.",
+    "verifyTitle": "Check your email",
+    "verifyPrompt": "We sent a 6-digit code to {{email}}. Enter it to continue.",
+    "code": "000000",
+    "verify": "Verify",
+    "resendCode": "Send a new code",
+    "codeResent": "New code sent.",
+    "codeInvalid": "That code isn't right. Check it and try again.",
+    "codeResendFailed": "Couldn't send a new code. Please try again.",
+    "consentText": "By continuing you agree to our",
+    "consentAnd": "and",
     "googleFailed": "Google sign in failed.",
+    "appleFailed": "Apple sign in failed.",
     "close": "Close"
   },
   "errors": {

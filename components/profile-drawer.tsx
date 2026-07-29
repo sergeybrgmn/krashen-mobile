@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Dimensions, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Pressable, StyleSheet, Switch, View } from 'react-native';
 import Purchases from 'react-native-purchases';
 import Animated, {
   useSharedValue,
@@ -20,7 +20,7 @@ import { Colors, Radii, Spacing } from '@/constants/theme';
 import { useConsent } from '@/hooks/use-consent';
 import { useMe } from '@/hooks/use-me';
 import { posthog } from '@/services/analytics';
-import { updateMe } from '@/services/api';
+import { deleteMe, updateMe } from '@/services/api';
 import { setUiLanguage, SUPPORTED_UI_LANGUAGES, UiLanguage } from '@/services/i18n';
 
 const UI_LANGUAGE_NAMES: Record<UiLanguage, string> = {
@@ -59,6 +59,7 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   const [uiLangPickerVisible, setUiLangPickerVisible] = useState(false);
   const [savingResponseLang, setSavingResponseLang] = useState(false);
   const [savingFluent, setSavingFluent] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { accepted: analyticsAccepted, update: setAnalyticsConsent } = useConsent();
 
   const deviceLocale = useMemo(() => getDeviceLanguageCode(), []);
@@ -132,6 +133,54 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
     },
     [getToken, refetchMe],
   );
+
+  // Account deletion — required by App Store guideline 5.1.1(v). The backend
+  // deletes the app data and the Clerk record in one all-or-nothing request, so
+  // there is nothing to undo once this returns; hence the two-step confirm.
+  // Signing out afterwards is not optional: the session token now names a user
+  // that no longer exists, and dropping the session is also what makes the root
+  // layout reset the RevenueCat / PostHog / Crisp identities.
+  const performDelete = useCallback(async () => {
+    setDeleting(true);
+    try {
+      const jwtTemplate = process.env.EXPO_PUBLIC_CLERK_JWT_TEMPLATE;
+      const token = await getToken(jwtTemplate ? { template: jwtTemplate } : undefined);
+      if (!token) throw new Error('No auth token');
+      await deleteMe(token);
+      onClose();
+      await signOut();
+      router.replace('/');
+    } catch {
+      Alert.alert(t('deleteAccount.failedTitle'), t('deleteAccount.failed'));
+    } finally {
+      setDeleting(false);
+    }
+  }, [getToken, onClose, signOut, router, t]);
+
+  const handleDeleteAccount = useCallback(() => {
+    // Subscribers additionally get told that Apple, not Krashen, owns the billing
+    // lifecycle — deleting the account here does not stop the charges.
+    const message = me?.is_subscribed
+      ? `${t('deleteAccount.message')}\n\n${t('deleteAccount.subscriptionNote')}`
+      : t('deleteAccount.message');
+
+    Alert.alert(t('deleteAccount.title'), message, [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('deleteAccount.continue'),
+        style: 'destructive',
+        onPress: () =>
+          Alert.alert(t('deleteAccount.confirmTitle'), t('deleteAccount.confirmMessage'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            {
+              text: t('deleteAccount.confirmButton'),
+              style: 'destructive',
+              onPress: () => void performDelete(),
+            },
+          ]),
+      },
+    ]);
+  }, [me?.is_subscribed, performDelete, t]);
 
   // Guest CTA — route to the contextual sign-in. Dismissing the modal returns
   // to wherever the drawer was opened from (Home or the player).
@@ -355,6 +404,25 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
               <Ionicons name="log-out-outline" size={20} color={Colors.error} />
               <ThemedText style={styles.signOutText}>{t('profile.signOut')}</ThemedText>
             </Pressable>
+
+            {/* Account deletion. Kept plainly visible rather than buried in a
+                submenu — 5.1.1(v) asks for an easily-found path. */}
+            <Pressable
+              style={styles.deleteAccountButton}
+              onPress={handleDeleteAccount}
+              disabled={deleting}
+              accessibilityRole="button"
+              accessibilityLabel={t('profile.deleteAccount')}
+            >
+              {deleting ? (
+                <ActivityIndicator size="small" color={Colors.textMuted} />
+              ) : (
+                <Ionicons name="trash-outline" size={18} color={Colors.textMuted} />
+              )}
+              <ThemedText style={styles.deleteAccountText}>
+                {t('profile.deleteAccount')}
+              </ThemedText>
+            </Pressable>
           </View>
         )}
       </Animated.View>
@@ -535,5 +603,15 @@ const styles = StyleSheet.create({
     color: Colors.error,
     fontSize: 15,
     fontWeight: '500',
+  },
+  deleteAccountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+  },
+  deleteAccountText: {
+    color: Colors.textMuted,
+    fontSize: 14,
   },
 });

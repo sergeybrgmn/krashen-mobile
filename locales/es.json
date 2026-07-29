@@ -54,7 +54,7 @@
     "reasonSave": "Crea una cuenta gratis para empezar a construir tu vocabulario.",
     "ladderGuest": "Invitado: escucha y toca palabras",
     "ladderFree": "Gratis: + haz 3 preguntas",
-    "ladderPro": "PRO: preguntas y palabras guardadas ilimitadas"
+    "ladderPro": "PRO: 100 preguntas por semana y palabras guardadas"
   },
   "coach": {
     "tapWord": "Toca cualquier palabra para ver su significado.",
@@ -100,7 +100,19 @@
     "restorePurchases": "Restaurar compras",
     "shareAnalytics": "Compartir analíticas",
     "shareAnalyticsHint": "Nos ayuda a mejorar Krashen",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "deleteAccount": "Eliminar cuenta"
+  },
+  "deleteAccount": {
+    "title": "¿Eliminar tu cuenta?",
+    "message": "Esto elimina permanentemente tu cuenta, tus palabras guardadas y tu historial de preguntas. No se puede deshacer.",
+    "subscriptionNote": "Tu suscripción la cobra Apple y no se cancela al eliminar tu cuenta. Para dejar de pagar, cancélala en Ajustes › Cuenta de Apple › Suscripciones.",
+    "continue": "Continuar",
+    "confirmTitle": "¿Estás seguro?",
+    "confirmMessage": "Tu cuenta y todos sus datos se eliminarán de inmediato. Es permanente.",
+    "confirmButton": "Eliminar cuenta",
+    "failedTitle": "No se pudo eliminar la cuenta",
+    "failed": "No pudimos eliminar tu cuenta. No se eliminó nada. Comprueba tu conexión e inténtalo de nuevo."
   },
   "auth": {
     "signIn": "Iniciar sesión",
@@ -113,7 +125,21 @@
     "hasAccount": "¿Ya tienes cuenta? Inicia sesión",
     "signInFailed": "Error al iniciar sesión.",
     "signUpFailed": "Error al registrarse.",
+    "signInIncomplete": "No pudimos completar tu inicio de sesión. Inténtalo de nuevo o continúa con Apple o Google.",
+    "signUpIncomplete": "No pudimos completar la creación de tu cuenta. Inténtalo de nuevo o continúa con Apple o Google.",
+    "notReady": "Aún estamos preparando todo — inténtalo de nuevo en un momento.",
+    "verifyTitle": "Revisa tu correo",
+    "verifyPrompt": "Enviamos un código de 6 dígitos a {{email}}. Introdúcelo para continuar.",
+    "code": "000000",
+    "verify": "Verificar",
+    "resendCode": "Enviar un código nuevo",
+    "codeResent": "Código nuevo enviado.",
+    "codeInvalid": "Ese código no es correcto. Revísalo e inténtalo de nuevo.",
+    "codeResendFailed": "No pudimos enviar un código nuevo. Inténtalo de nuevo.",
+    "consentText": "Al continuar, aceptas nuestros",
+    "consentAnd": "y",
     "googleFailed": "Error al iniciar sesión con Google.",
+    "appleFailed": "Error al iniciar sesión con Apple.",
     "close": "Cerrar"
   },
   "errors": {
