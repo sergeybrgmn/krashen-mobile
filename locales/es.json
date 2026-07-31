@@ -97,6 +97,8 @@
     "responseLanguageHint": "Se usa cuando haces preguntas",
     "fluentMode": "Modo avanzado",
     "fluentModeHint": "Respuestas más completas para oyentes con experiencia. Puede tardar más.",
+    "manageSubscription": "Gestionar suscripción",
+    "manageSubscriptionHint": "Cambia o cancela tu plan en el App Store",
     "restorePurchases": "Restaurar compras",
     "shareAnalytics": "Compartir analíticas",
     "shareAnalyticsHint": "Nos ayuda a mejorar Krashen",

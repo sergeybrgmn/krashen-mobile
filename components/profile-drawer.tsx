@@ -80,6 +80,19 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
     }
   }, [refetchMe]);
 
+  // Cancelling, upgrading and downgrading all belong to Apple — there is no API
+  // to do any of it, by design. This opens Apple's own sheet, which is the only
+  // place it can happen. Refetch on return so a cancellation shows up as an
+  // expiry date rather than a renewal one.
+  const handleManageSubscription = useCallback(async () => {
+    try {
+      await Purchases.showManageSubscriptions();
+    } catch (e) {
+      console.warn('Could not open subscription management', e);
+    }
+    await refetchMe();
+  }, [refetchMe]);
+
   const handleResponseLanguageConfirm = useCallback(
     async (lang: string) => {
       setResponseLangPickerVisible(false);
@@ -359,6 +372,25 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
                   />
                 </View>
               </View>
+
+              {/* Subscribers only — Apple's sheet is meaningless without one.
+                  Sits above Restore Purchases because cancelling is the more
+                  likely errand for someone who already pays. */}
+              {me?.is_subscribed && (
+                <Pressable style={styles.menuItem} onPress={handleManageSubscription}>
+                  <Ionicons name="card-outline" size={20} color={Colors.textSecondary} />
+                  <View style={styles.responseLangRow}>
+                    <View style={styles.responseLangLabels}>
+                      <ThemedText style={styles.menuItemText}>
+                        {t('profile.manageSubscription')}
+                      </ThemedText>
+                      <ThemedText type="small" style={styles.responseLangHint}>
+                        {t('profile.manageSubscriptionHint')}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </Pressable>
+              )}
 
               <Pressable
                 style={styles.menuItem}
