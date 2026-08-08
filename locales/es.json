@@ -88,7 +88,7 @@
     "planFree": "Gratis",
     "expires": "Expira el {{date}}",
     "renews": "Se renueva el {{date}}",
-    "questionsLeftThisMonth": "restantes este mes",
+    "questionsLeftThisWeek": "restantes esta semana",
     "questionsLeft": "preguntas restantes",
     "myWords": "Mis palabras",
     "appLanguage": "Idioma de la aplicación",
@@ -103,7 +103,10 @@
     "shareAnalytics": "Compartir analíticas",
     "shareAnalyticsHint": "Nos ayuda a mejorar Krashen",
     "signOut": "Cerrar sesión",
-    "deleteAccount": "Eliminar cuenta"
+    "deleteAccount": "Eliminar cuenta",
+    "restoreDone": "Tus compras se han restaurado.",
+    "restoreEmpty": "No se encontraron compras anteriores para este ID de Apple.",
+    "restoreFailed": "No se pudieron restaurar las compras. Inténtalo de nuevo."
   },
   "deleteAccount": {
     "title": "¿Eliminar tu cuenta?",

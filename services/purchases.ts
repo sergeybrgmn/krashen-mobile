@@ -4,6 +4,14 @@ import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 const RC_KEY_IOS = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? '';
 const RC_KEY_ANDROID = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? '';
 
+/**
+ * The RevenueCat entitlement that grants Pro. This string is the only hard link
+ * between this codebase and the RevenueCat dashboard: it must match the
+ * entitlement identifier there exactly, or no purchase is ever recognised.
+ * Changing it requires a new build, unlike everything else about the paywall.
+ */
+export const PRO_ENTITLEMENT = 'pro';
+
 let configured = false;
 
 /**

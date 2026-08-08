@@ -88,7 +88,7 @@
     "planFree": "Free",
     "expires": "Expires {{date}}",
     "renews": "Renews {{date}}",
-    "questionsLeftThisMonth": "left this month",
+    "questionsLeftThisWeek": "left this week",
     "questionsLeft": "questions left",
     "myWords": "My Words",
     "appLanguage": "App language",
@@ -103,7 +103,10 @@
     "shareAnalytics": "Share analytics",
     "shareAnalyticsHint": "Helps us improve Krashen",
     "signOut": "Sign Out",
-    "deleteAccount": "Delete Account"
+    "deleteAccount": "Delete Account",
+    "restoreDone": "Your purchases have been restored.",
+    "restoreEmpty": "No previous purchases were found for this Apple ID.",
+    "restoreFailed": "Could not restore purchases. Please try again."
   },
   "deleteAccount": {
     "title": "Delete account?",

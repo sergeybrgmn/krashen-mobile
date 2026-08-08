@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { posthog } from '@/services/analytics';
+import { PRO_ENTITLEMENT } from '@/services/purchases';
 
 /** Shape of the errors RevenueCat rejects with. All fields are best-effort. */
 type PaywallError = {
@@ -51,7 +52,7 @@ export function usePaywall() {
     let result: PAYWALL_RESULT;
     try {
       result = await RevenueCatUI.presentPaywallIfNeeded({
-        requiredEntitlementIdentifier: 'pro',
+        requiredEntitlementIdentifier: PRO_ENTITLEMENT,
       });
     } catch (e) {
       // Thrown for configuration problems — products missing from App Store

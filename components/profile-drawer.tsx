@@ -3,7 +3,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Alert, Dimensions, Pressable, StyleSheet, Switch, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  View,
+} from 'react-native';
 import Purchases from 'react-native-purchases';
 import Animated, {
   useSharedValue,
@@ -21,6 +30,7 @@ import { useConsent } from '@/hooks/use-consent';
 import { useMe } from '@/hooks/use-me';
 import { posthog } from '@/services/analytics';
 import { deleteMe, updateMe } from '@/services/api';
+import { PRO_ENTITLEMENT } from '@/services/purchases';
 import { setUiLanguage, SUPPORTED_UI_LANGUAGES, UiLanguage } from '@/services/i18n';
 
 const UI_LANGUAGE_NAMES: Record<UiLanguage, string> = {
@@ -73,12 +83,34 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   const handleRestore = useCallback(async () => {
     setRestoring(true);
     try {
-      await Purchases.restorePurchases();
+      const info = await Purchases.restorePurchases();
+      const restored = PRO_ENTITLEMENT in info.entitlements.active;
       await refetchMe();
+      // Always say something. A spinner that stops with no message reads as a
+      // broken button — and "nothing to restore" is a legitimate outcome that
+      // guideline 3.1.1 expects this control to report.
+      Alert.alert(
+        t('profile.restorePurchases'),
+        restored ? t('profile.restoreDone') : t('profile.restoreEmpty'),
+      );
+    } catch (e) {
+      // restorePurchases throws on store and network failures. Without a catch
+      // this was an unhandled rejection and the user just saw the spinner stop.
+      const err = e as {
+        readableErrorCode?: string;
+        underlyingErrorMessage?: string;
+        message?: string;
+      };
+      posthog?.capture('restore_error', {
+        readable_error_code: err.readableErrorCode ?? null,
+        underlying_error_message: err.underlyingErrorMessage ?? null,
+        message: err.message ?? null,
+      });
+      Alert.alert(t('profile.restorePurchases'), t('profile.restoreFailed'));
     } finally {
       setRestoring(false);
     }
-  }, [refetchMe]);
+  }, [refetchMe, t]);
 
   // Cancelling, upgrading and downgrading all belong to Apple — there is no API
   // to do any of it, by design. This opens Apple's own sheet, which is the only
@@ -293,14 +325,22 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
               {meLoading && !me ? '…' : me ? me.questions_left : '—'}
             </ThemedText>
             <ThemedText type="small" style={styles.quotaLabel}>
-              {me?.is_subscribed ? t('profile.questionsLeftThisMonth') : t('profile.questionsLeft')}
+              {me?.is_subscribed ? t('profile.questionsLeftThisWeek') : t('profile.questionsLeft')}
             </ThemedText>
           </View>
         </View>
         )}
 
         {/* Menu */}
-        <View style={styles.menuSection}>
+        {/* Scrollable: the menu grows when the user is signed in and again when
+            they subscribe (Manage Subscription + Restore Purchases). Without a
+            ScrollView this section shrinks below its content and the items
+            overflow on top of the footer. */}
+        <ScrollView
+          style={styles.menuSection}
+          contentContainerStyle={styles.menuSectionContent}
+          showsVerticalScrollIndicator={false}
+        >
           <Pressable style={styles.menuItem} onPress={handleMyWords}>
             <Ionicons name="book-outline" size={20} color={Colors.textSecondary} />
             <ThemedText style={styles.menuItemText}>{t('profile.myWords')}</ThemedText>
@@ -424,7 +464,7 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
               />
             </View>
           </View>
-        </View>
+        </ScrollView>
 
         {/* Sign out — signed-in only (guests have no session). */}
         {isSignedIn && (
@@ -563,6 +603,8 @@ const styles = StyleSheet.create({
   },
   menuSection: {
     flex: 1,
+  },
+  menuSectionContent: {
     paddingTop: Spacing.md,
   },
   menuItem: {
