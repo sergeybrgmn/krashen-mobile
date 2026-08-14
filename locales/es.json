@@ -145,7 +145,9 @@
     "consentAnd": "y",
     "googleFailed": "Error al iniciar sesión con Google.",
     "appleFailed": "Error al iniciar sesión con Apple.",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña"
   },
   "errors": {
     "micPermission": "Permiso de micrófono denegado o no disponible.",

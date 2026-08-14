@@ -36,6 +36,7 @@ export default function SignInScreen() {
   const [mode, setMode] = useState<Mode>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [pendingCode, setPendingCode] = useState<PendingCode | null>(null);
@@ -443,15 +444,34 @@ export default function SignInScreen() {
               textContentType="emailAddress"
             />
 
-            <TextInput
-              style={styles.input}
-              placeholder={t('auth.password')}
-              placeholderTextColor={Colors.textMuted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              textContentType="password"
-            />
+            {/* Reveal toggle: this password is typed by hand on a phone keyboard,
+                where a silent typo is indistinguishable from a wrong password. */}
+            <View style={styles.passwordField}>
+              <TextInput
+                style={[styles.input, styles.passwordInput]}
+                placeholder={t('auth.password')}
+                placeholderTextColor={Colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!passwordVisible}
+                textContentType="password"
+              />
+              <Pressable
+                style={styles.passwordReveal}
+                onPress={() => setPasswordVisible((v) => !v)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t(
+                  passwordVisible ? 'auth.hidePassword' : 'auth.showPassword',
+                )}
+              >
+                <Ionicons
+                  name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={Colors.textMuted}
+                />
+              </Pressable>
+            </View>
 
             <Pressable
               style={[styles.button, loading && styles.buttonDisabled]}
@@ -575,6 +595,22 @@ const styles = StyleSheet.create({
   },
   consentLink: {
     color: Colors.cyan,
+  },
+  passwordField: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  passwordInput: {
+    // Room for the reveal button so long passphrases don't run under it.
+    paddingRight: 48,
+  },
+  passwordReveal: {
+    position: 'absolute',
+    right: Spacing.sm,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.sm,
   },
   input: {
     backgroundColor: Colors.background,
