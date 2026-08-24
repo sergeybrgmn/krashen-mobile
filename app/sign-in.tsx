@@ -256,17 +256,38 @@ export default function SignInScreen() {
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId });
         finishAuth();
+        return;
+      }
+      // A brand-new social user lands here. The instance requires express legal
+      // consent, but neither social hook accepts `legalAccepted` — the params of
+      // both `startAppleAuthenticationFlow` and `startSSOFlow` carry only
+      // `unsafeMetadata` — so Clerk parks the sign-up at `missing_requirements`
+      // and issues no session. Supplying the field finishes it. The consent row
+      // under these buttons is shown for every method, which is what makes
+      // asserting it honest.
+      //
+      // Missing this cost an App Store rejection: a reviewer's fresh Apple ID
+      // took this path and saw only "Apple sign in failed".
+      if (setActive && appleSignUp?.status === 'missing_requirements') {
+        const completed = await appleSignUp.update({ legalAccepted: true });
+        if (completed.status === 'complete' && completed.createdSessionId) {
+          await setActive({ session: completed.createdSessionId });
+          finishAuth();
+          return;
+        }
+        console.warn('Apple sign-up still incomplete after legal consent', {
+          status: completed.status,
+          missingFields: completed.missingFields,
+          unverifiedFields: completed.unverifiedFields,
+        });
       } else {
-        // No session and no throw means Clerk wants something more before it will
-        // issue one — most likely a brand-new account still missing a required
-        // field. Report it rather than leaving the button apparently dead.
         console.warn('Apple sign-in produced no session', {
           signUpStatus: appleSignUp?.status,
           missingFields: appleSignUp?.missingFields,
           unverifiedFields: appleSignUp?.unverifiedFields,
         });
-        setError(t('auth.appleFailed'));
       }
+      setError(t('auth.appleFailed'));
     } catch (e: unknown) {
       // Backing out of the native sheet is a normal choice, not an error to report.
       if ((e as { code?: string })?.code === 'ERR_REQUEST_CANCELED') return;
@@ -287,14 +308,29 @@ export default function SignInScreen() {
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId });
         finishAuth();
+        return;
+      }
+      // Same legal-consent gap as the Apple flow above.
+      if (setActive && googleSignUp?.status === 'missing_requirements') {
+        const completed = await googleSignUp.update({ legalAccepted: true });
+        if (completed.status === 'complete' && completed.createdSessionId) {
+          await setActive({ session: completed.createdSessionId });
+          finishAuth();
+          return;
+        }
+        console.warn('Google sign-up still incomplete after legal consent', {
+          status: completed.status,
+          missingFields: completed.missingFields,
+          unverifiedFields: completed.unverifiedFields,
+        });
       } else {
         console.warn('Google sign-in produced no session', {
           signUpStatus: googleSignUp?.status,
           missingFields: googleSignUp?.missingFields,
           unverifiedFields: googleSignUp?.unverifiedFields,
         });
-        setError(t('auth.googleFailed'));
       }
+      setError(t('auth.googleFailed'));
     } catch (e: unknown) {
       const msg = (e as { errors?: { message: string }[] })?.errors?.[0]?.message;
       console.warn('Google sign-in failed', e);
@@ -474,7 +510,10 @@ export default function SignInScreen() {
             </View>
 
             <Pressable
-              style={[styles.button, loading && styles.buttonDisabled]}
+              // `disabled` also covers !isLoaded, so the style must too — otherwise
+              // the button looks live while Clerk is still initialising and taps do
+              // nothing at all, with no error and no spinner.
+              style={[styles.button, (loading || !isLoaded) && styles.buttonDisabled]}
               onPress={mode === 'signIn' ? handleSignIn : handleSignUp}
               disabled={loading || !isLoaded}
             >
