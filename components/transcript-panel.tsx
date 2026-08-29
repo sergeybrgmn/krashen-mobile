@@ -54,12 +54,16 @@ function SegmentText({
     );
   }
 
-  // Build spans: sort words by start_char, render plain text between them
+  // Build spans: sort words by start_char, render plain text between them.
+  // Spans can overlap (a multi-word expression plus one of its own tokens, e.g.
+  // "revolucion industrial" and "industrial"); keep the first and skip any span
+  // that starts inside or before what we have already rendered.
   const sorted = [...words].sort((a, b) => a.start_char - b.start_char);
   const parts: React.ReactNode[] = [];
   let lastEnd = 0;
 
   sorted.forEach((w, i) => {
+    if (w.start_char < lastEnd || w.start_char >= text.length) return;
     if (w.start_char > lastEnd) {
       parts.push(
         <ThemedText
