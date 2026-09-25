@@ -1,109 +1,100 @@
-import { Audio, AVPlaybackStatus } from 'expo-av';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  setAudioModeAsync,
+  useAudioPlayer as useExpoPlayer,
+  useAudioPlayerStatus,
+} from 'expo-audio';
+import { useCallback, useEffect, useState } from 'react';
 
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2];
 
+/** Matches the cadence expo-av was polled at, so the progress bar moves as before. */
+const STATUS_INTERVAL_MS = 250;
+
+/**
+ * Episode playback, on expo-audio.
+ *
+ * Migrated off expo-av (deprecated in SDK 54, removed in SDK 55), which is also
+ * what broke Android recording. Keeping both halves of the audio stack on one
+ * module means a single native audio session rather than two modules contending
+ * for it. `shouldPlayInBackground` replaces expo-av's `staysActiveInBackground`
+ * and, unlike it, applies on Android as well as iOS.
+ *
+ * Times are seconds throughout — expo-audio's native unit — where expo-av worked
+ * in milliseconds.
+ */
 export function useAudioPlayer() {
-  const soundRef = useRef<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [position, setPosition] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [buffered, setBuffered] = useState(0);
-  const [speed, setSpeed] = useState(1);
+  const player = useExpoPlayer(undefined, { updateInterval: STATUS_INTERVAL_MS });
+  const status = useAudioPlayerStatus(player);
+
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [speed, setSpeed] = useState(1);
 
   useEffect(() => {
-    Audio.setAudioModeAsync({
-      staysActiveInBackground: true,
-      playsInSilentModeIOS: true,
+    void setAudioModeAsync({
+      shouldPlayInBackground: true,
+      playsInSilentMode: true,
+      allowsRecording: false,
     });
-  }, []);
-
-  const onPlaybackStatusUpdate = useCallback((status: AVPlaybackStatus) => {
-    if (!status.isLoaded) {
-      if (status.error) {
-        console.error('Playback error:', status.error);
-      }
-      return;
-    }
-    setIsLoaded(true);
-    setIsPlaying(status.isPlaying);
-    setPosition(status.positionMillis / 1000);
-    setDuration((status.durationMillis ?? 0) / 1000);
-    if (status.playableDurationMillis != null) {
-      setBuffered(status.playableDurationMillis / 1000);
-    }
   }, []);
 
   const load = useCallback(
     async (url: string) => {
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync();
-      }
       setAudioUrl(url);
-      setIsLoaded(false);
-      setPosition(0);
-      setDuration(0);
-      setBuffered(0);
       setSpeed(1);
-      setIsPlaying(false);
-
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: url },
-        { progressUpdateIntervalMillis: 250, shouldPlay: false },
-        onPlaybackStatusUpdate,
-      );
-      soundRef.current = sound;
+      player.replace({ uri: url });
+      player.setPlaybackRate(1);
     },
-    [onPlaybackStatusUpdate],
+    [player],
   );
 
   const play = useCallback(async () => {
-    await soundRef.current?.playAsync();
-  }, []);
+    player.play();
+  }, [player]);
 
   const pause = useCallback(async () => {
-    await soundRef.current?.pauseAsync();
-  }, []);
+    player.pause();
+  }, [player]);
 
   const togglePlayPause = useCallback(async () => {
-    if (isPlaying) {
-      await pause();
+    if (status.playing) {
+      player.pause();
     } else {
-      await play();
+      player.play();
     }
-  }, [isPlaying, play, pause]);
+  }, [player, status.playing]);
 
-  const seek = useCallback(async (seconds: number) => {
-    await soundRef.current?.setPositionAsync(Math.max(0, seconds * 1000));
-  }, []);
+  const seek = useCallback(
+    async (seconds: number) => {
+      await player.seekTo(Math.max(0, seconds));
+    },
+    [player],
+  );
 
   const skip = useCallback(
     async (delta: number) => {
-      const newPos = Math.max(0, Math.min(position + delta, duration));
-      await seek(newPos);
+      const target = Math.max(0, Math.min(status.currentTime + delta, status.duration));
+      await player.seekTo(target);
     },
-    [position, duration, seek],
+    [player, status.currentTime, status.duration],
   );
 
-  const changeSpeed = useCallback(async (newSpeed: number) => {
-    setSpeed(newSpeed);
-    await soundRef.current?.setRateAsync(newSpeed, true);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      soundRef.current?.unloadAsync();
-    };
-  }, []);
+  const changeSpeed = useCallback(
+    async (newSpeed: number) => {
+      setSpeed(newSpeed);
+      player.setPlaybackRate(newSpeed);
+    },
+    [player],
+  );
 
   return {
-    isPlaying,
-    isLoaded,
-    position,
-    duration,
-    buffered,
+    isPlaying: status.playing,
+    isLoaded: status.isLoaded,
+    position: status.currentTime,
+    duration: status.duration,
+    // expo-audio reports only `isBuffering` (a boolean), with no playable-duration
+    // equivalent to expo-av's `playableDurationMillis`, so the progress bar's grey
+    // buffered track has no data to draw. Kept in the API so callers are unchanged.
+    buffered: 0,
     speed,
     audioUrl,
     speedOptions: SPEED_OPTIONS,

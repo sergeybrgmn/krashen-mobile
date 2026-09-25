@@ -1,24 +1,36 @@
-import { Audio } from 'expo-av';
+import {
+  AudioQuality,
+  IOSOutputFormat,
+  RecordingOptions,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioRecorder as useExpoRecorder,
+} from 'expo-audio';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/** AAC in .m4a container — compatible with OpenAI Whisper API */
-const RECORDING_OPTIONS: Audio.RecordingOptions = {
-  isMeteringEnabled: false,
+/**
+ * AAC in .m4a container — compatible with OpenAI Whisper API.
+ *
+ * Built on expo-audio rather than expo-av: expo-av's Android recorder produced
+ * correctly-sized files containing pure silence on SDK 54 / RN 0.81 while iOS was
+ * unaffected, and its `RecordingOptionsAndroid` exposes no audio-source knob to
+ * work around it. expo-audio also replaces the iOS-only `allowsRecordingIOS`
+ * audio-mode flag with a cross-platform `allowsRecording`, so the session is
+ * actually configured for capture on Android. expo-av is deprecated in SDK 54 and
+ * removed in SDK 55 regardless.
+ */
+const RECORDING_OPTIONS: RecordingOptions = {
+  extension: '.m4a',
+  sampleRate: 44100,
+  numberOfChannels: 1,
+  bitRate: 128000,
   android: {
-    extension: '.m4a',
-    outputFormat: Audio.AndroidOutputFormat.MPEG_4,
-    audioEncoder: Audio.AndroidAudioEncoder.AAC,
-    sampleRate: 44100,
-    numberOfChannels: 1,
-    bitRate: 128000,
+    outputFormat: 'mpeg4',
+    audioEncoder: 'aac',
   },
   ios: {
-    extension: '.m4a',
-    audioQuality: Audio.IOSAudioQuality.HIGH,
-    outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
-    sampleRate: 44100,
-    numberOfChannels: 1,
-    bitRate: 128000,
+    outputFormat: IOSOutputFormat.MPEG4AAC,
+    audioQuality: AudioQuality.HIGH,
     linearPCMBitDepth: 16,
     linearPCMIsBigEndian: false,
     linearPCMIsFloat: false,
@@ -28,6 +40,19 @@ const RECORDING_OPTIONS: Audio.RecordingOptions = {
     bitsPerSecond: 128000,
   },
 };
+
+/** Session for normal playback: capture off, background playback on. */
+const PLAYBACK_AUDIO_MODE = {
+  allowsRecording: false,
+  playsInSilentMode: true,
+  shouldPlayInBackground: true,
+} as const;
+
+/** Session while capturing. Unlike expo-av's iOS-only flag, this reaches Android. */
+const RECORDING_AUDIO_MODE = {
+  allowsRecording: true,
+  playsInSilentMode: true,
+} as const;
 
 const TICK_INTERVAL_MS = 250;
 
@@ -39,7 +64,7 @@ interface Options {
 export function useAudioRecorder(options: Options = {}) {
   const { maxDurationMs, onLimitReached } = options;
 
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const recorder = useExpoRecorder(RECORDING_OPTIONS);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const maxMsRef = useRef<number | undefined>(maxDurationMs);
   const onLimitRef = useRef<Options['onLimitReached']>(onLimitReached);
@@ -61,43 +86,30 @@ export function useAudioRecorder(options: Options = {}) {
 
   const stop = useCallback(async (): Promise<string | null> => {
     clearTick();
-    if (!recordingRef.current) return null;
+    if (!recorder.isRecording) return null;
     try {
-      await recordingRef.current.stopAndUnloadAsync();
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
+      await recorder.stop();
+      // `uri` is only populated once the recorder has finished writing.
+      const uri = recorder.uri;
       setIsRecording(false);
-
-      // Restore audio mode for playback
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-      });
-
+      await setAudioModeAsync(PLAYBACK_AUDIO_MODE);
       return uri;
     } catch {
-      recordingRef.current = null;
       setIsRecording(false);
       return null;
     }
-  }, []);
+  }, [recorder]);
 
   const start = useCallback(async () => {
-    const { granted } = await Audio.requestPermissionsAsync();
+    const { granted } = await requestRecordingPermissionsAsync();
     if (!granted) {
       throw new Error('Microphone permission denied');
     }
 
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-    });
+    await setAudioModeAsync(RECORDING_AUDIO_MODE);
+    await recorder.prepareToRecordAsync();
+    recorder.record();
 
-    const recording = new Audio.Recording();
-    await recording.prepareToRecordAsync(RECORDING_OPTIONS);
-    await recording.startAsync();
-    recordingRef.current = recording;
     setIsRecording(true);
     setElapsedMs(0);
 
@@ -114,28 +126,18 @@ export function useAudioRecorder(options: Options = {}) {
         })();
       }
     }, TICK_INTERVAL_MS);
-  }, [stop]);
+  }, [recorder, stop]);
 
   const cancel = useCallback(async () => {
     clearTick();
-    if (!recordingRef.current) {
-      setIsRecording(false);
-      return;
-    }
-    try {
-      await recordingRef.current.stopAndUnloadAsync();
-    } catch {
-      // ignore
-    }
-    recordingRef.current = null;
     setIsRecording(false);
-
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: true,
-    });
-  }, []);
+    try {
+      if (recorder.isRecording) await recorder.stop();
+    } catch {
+      // The clip is being discarded either way.
+    }
+    await setAudioModeAsync(PLAYBACK_AUDIO_MODE);
+  }, [recorder]);
 
   return { isRecording, elapsedMs, start, stop, cancel };
 }

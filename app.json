@@ -56,12 +56,10 @@
         {
           "ios": {
             "deploymentTarget": "15.1"
-          },
-          "android": {
-            "minSdkVersion": 21
           }
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,
