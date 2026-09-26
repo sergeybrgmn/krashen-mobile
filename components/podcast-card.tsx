@@ -1,20 +1,11 @@
-import * as Application from 'expo-application';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Radii, Sizes, Spacing } from '@/constants/theme';
+import { MEDIA_USER_AGENT } from '@/constants/user-agent';
 import { Podcast } from '@/services/api';
-
-/**
- * Buzzsprout serves cover art behind Cloudflare, which 403s any request whose
- * User-Agent is the literal `okhttp/x.y.z` that Android image loaders send by
- * default — so those covers render on iOS (CFNetwork UA) and come back empty on
- * Android. Identifying ourselves honestly is enough; the rule only rejects the
- * okhttp signature and empty agents, not non-browsers.
- */
-const COVER_USER_AGENT = `Krashen/${Application.nativeApplicationVersion ?? '1.0'} (+https://krashen.app)`;
 
 interface Props {
   podcast: Podcast;
@@ -40,7 +31,7 @@ export function PodcastCard({ podcast, selected, onPress }: Props) {
           <Image
             source={{
               uri: podcast.cover_url,
-              headers: { 'User-Agent': COVER_USER_AGENT },
+              headers: { 'User-Agent': MEDIA_USER_AGENT },
             }}
             style={styles.image}
             contentFit="cover"

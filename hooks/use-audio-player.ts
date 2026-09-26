@@ -3,7 +3,9 @@ import {
   useAudioPlayer as useExpoPlayer,
   useAudioPlayerStatus,
 } from 'expo-audio';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { MEDIA_USER_AGENT } from '@/constants/user-agent';
 
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2];
 
@@ -23,11 +25,20 @@ const STATUS_INTERVAL_MS = 250;
  * in milliseconds.
  */
 export function useAudioPlayer() {
-  const player = useExpoPlayer(undefined, { updateInterval: STATUS_INTERVAL_MS });
-  const status = useAudioPlayerStatus(player);
-
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [speed, setSpeed] = useState(1);
+
+  // The source is a hook argument, not something we swap in later: expo-audio
+  // rebuilds the underlying player whenever it changes (see `useReleasingSharedObject`
+  // in ExpoAudio.js). Constructing with no source and calling `replace()` afterwards
+  // leaves the player permanently unloaded.
+  const source = useMemo(
+    () =>
+      audioUrl ? { uri: audioUrl, headers: { 'User-Agent': MEDIA_USER_AGENT } } : null,
+    [audioUrl],
+  );
+  const player = useExpoPlayer(source, { updateInterval: STATUS_INTERVAL_MS });
+  const status = useAudioPlayerStatus(player);
 
   useEffect(() => {
     void setAudioModeAsync({
@@ -39,12 +50,11 @@ export function useAudioPlayer() {
 
   const load = useCallback(
     async (url: string) => {
-      setAudioUrl(url);
+      // Swapping the url rebuilds the player, which resets the rate to 1x.
       setSpeed(1);
-      player.replace({ uri: url });
-      player.setPlaybackRate(1);
+      setAudioUrl(url);
     },
-    [player],
+    [],
   );
 
   const play = useCallback(async () => {

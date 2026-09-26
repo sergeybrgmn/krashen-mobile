@@ -98,7 +98,6 @@ export default function RootLayout() {
               <Stack.Screen name="privacy" />
               <Stack.Screen name="terms" />
               <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="sso-callback" options={{ animation: 'none' }} />
             </Stack>
           </AuthGate>
           <StatusBar style="light" />

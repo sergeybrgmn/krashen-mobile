@@ -1,7 +1,6 @@
 import {
-  AudioQuality,
-  IOSOutputFormat,
   RecordingOptions,
+  RecordingPresets,
   requestRecordingPermissionsAsync,
   setAudioModeAsync,
   useAudioRecorder as useExpoRecorder,
@@ -11,34 +10,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 /**
  * AAC in .m4a container — compatible with OpenAI Whisper API.
  *
- * Built on expo-audio rather than expo-av: expo-av's Android recorder produced
- * correctly-sized files containing pure silence on SDK 54 / RN 0.81 while iOS was
- * unaffected, and its `RecordingOptionsAndroid` exposes no audio-source knob to
- * work around it. expo-audio also replaces the iOS-only `allowsRecordingIOS`
- * audio-mode flag with a cross-platform `allowsRecording`, so the session is
- * actually configured for capture on Android. expo-av is deprecated in SDK 54 and
- * removed in SDK 55 regardless.
+ * Built on expo-audio because expo-av is deprecated in SDK 54 and removed in 55,
+ * and because `allowsRecording` configures the capture session on Android, where
+ * expo-av only offered the iOS-only `allowsRecordingIOS`.
+ *
+ * Note: switching libraries did NOT by itself fix Android recording silence —
+ * both produced full-length files with no audio in them.
  */
 const RECORDING_OPTIONS: RecordingOptions = {
-  extension: '.m4a',
-  sampleRate: 44100,
-  numberOfChannels: 1,
-  bitRate: 128000,
-  android: {
-    outputFormat: 'mpeg4',
-    audioEncoder: 'aac',
-  },
-  ios: {
-    outputFormat: IOSOutputFormat.MPEG4AAC,
-    audioQuality: AudioQuality.HIGH,
-    linearPCMBitDepth: 16,
-    linearPCMIsBigEndian: false,
-    linearPCMIsFloat: false,
-  },
-  web: {
-    mimeType: 'audio/webm',
-    bitsPerSecond: 128000,
-  },
+  ...RecordingPresets.HIGH_QUALITY,
+  // Mono at 44.1 kHz (our previous setting) produced full-length files of pure
+  // silence on Android. Android's MediaRecorder is picky about rate/channel
+  // combinations, so stay on the preset expo-audio actually ships and tests.
+  // Whisper accepts stereo, and bitRate is unchanged so the upload size is too.
 };
 
 /** Session for normal playback: capture off, background playback on. */
