@@ -49,6 +49,8 @@ export function useAudioRecorder(options: Options = {}) {
   const { maxDurationMs, onLimitReached } = options;
 
   const recorder = useExpoRecorder(RECORDING_OPTIONS);
+  /** True from a successful `record()` until `stop`/`cancel`, paused or not. */
+  const activeRef = useRef(false);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const maxMsRef = useRef<number | undefined>(maxDurationMs);
   const onLimitRef = useRef<Options['onLimitReached']>(onLimitReached);
@@ -70,18 +72,23 @@ export function useAudioRecorder(options: Options = {}) {
 
   const stop = useCallback(async (): Promise<string | null> => {
     clearTick();
-    if (!recorder.isRecording) return null;
+    // Our own flag, not `recorder.isRecording`: iOS pauses the recorder during an
+    // audio interruption (a call, Siri), which reads as not-recording. Gating on it
+    // skipped the stop, left the UI stuck in its recording state, and left the
+    // session in record mode — where iOS routes playback to the earpiece.
+    if (!activeRef.current) return null;
+    activeRef.current = false;
+    setIsRecording(false);
+    let uri: string | null = null;
     try {
       await recorder.stop();
       // `uri` is only populated once the recorder has finished writing.
-      const uri = recorder.uri;
-      setIsRecording(false);
-      await setAudioModeAsync(PLAYBACK_AUDIO_MODE);
-      return uri;
+      uri = recorder.uri;
     } catch {
-      setIsRecording(false);
-      return null;
+      // Fall through: the session must go back to playback mode regardless.
     }
+    await setAudioModeAsync(PLAYBACK_AUDIO_MODE);
+    return uri;
   }, [recorder]);
 
   const start = useCallback(async () => {
@@ -91,8 +98,14 @@ export function useAudioRecorder(options: Options = {}) {
     }
 
     await setAudioModeAsync(RECORDING_AUDIO_MODE);
-    await recorder.prepareToRecordAsync();
-    recorder.record();
+    try {
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+    } catch (e) {
+      await setAudioModeAsync(PLAYBACK_AUDIO_MODE);
+      throw e;
+    }
+    activeRef.current = true;
 
     setIsRecording(true);
     setElapsedMs(0);
@@ -115,8 +128,10 @@ export function useAudioRecorder(options: Options = {}) {
   const cancel = useCallback(async () => {
     clearTick();
     setIsRecording(false);
+    const wasActive = activeRef.current;
+    activeRef.current = false;
     try {
-      if (recorder.isRecording) await recorder.stop();
+      if (wasActive) await recorder.stop();
     } catch {
       // The clip is being discarded either way.
     }
