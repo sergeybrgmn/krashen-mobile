@@ -99,6 +99,7 @@
     "fluentModeHint": "Respuestas más completas para oyentes con experiencia. Puede tardar más.",
     "manageSubscription": "Gestionar suscripción",
     "manageSubscriptionHint": "Cambia o cancela tu plan en el App Store",
+    "manageSubscriptionHintAndroid": "Cambia o cancela tu plan en Google Play",
     "restorePurchases": "Restaurar compras",
     "shareAnalytics": "Compartir analíticas",
     "shareAnalyticsHint": "Nos ayuda a mejorar Krashen",
@@ -106,12 +107,14 @@
     "deleteAccount": "Eliminar cuenta",
     "restoreDone": "Tus compras se han restaurado.",
     "restoreEmpty": "No se encontraron compras anteriores para este ID de Apple.",
+    "restoreEmptyAndroid": "No se encontraron compras anteriores para esta cuenta de Google.",
     "restoreFailed": "No se pudieron restaurar las compras. Inténtalo de nuevo."
   },
   "deleteAccount": {
     "title": "¿Eliminar tu cuenta?",
     "message": "Esto elimina permanentemente tu cuenta, tus palabras guardadas y tu historial de preguntas. No se puede deshacer.",
     "subscriptionNote": "Tu suscripción la cobra Apple y no se cancela al eliminar tu cuenta. Para dejar de pagar, cancélala en Ajustes › Cuenta de Apple › Suscripciones.",
+    "subscriptionNoteAndroid": "Tu suscripción la cobra Google Play y no se cancela al eliminar tu cuenta. Para dejar de pagar, cancélala en la app Play Store › tu foto de perfil › Pagos y suscripciones › Suscripciones.",
     "continue": "Continuar",
     "confirmTitle": "¿Estás seguro?",
     "confirmMessage": "Tu cuenta y todos sus datos se eliminarán de inmediato. Es permanente.",

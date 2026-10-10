@@ -1,4 +1,5 @@
 import {
+  type AudioMetadata,
   setAudioModeAsync,
   useAudioPlayer as useExpoPlayer,
   useAudioPlayerStatus,
@@ -26,6 +27,7 @@ const STATUS_INTERVAL_MS = 250;
  */
 export function useAudioPlayer() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [lockScreen, setLockScreen] = useState<AudioMetadata | null>(null);
   const [speed, setSpeed] = useState(1);
 
   // The source is a hook argument, not something we swap in later: expo-audio
@@ -48,11 +50,25 @@ export function useAudioPlayer() {
     });
   }, []);
 
+  // Lock-screen and notification controls. On Android this is also what starts
+  // expo-audio's media-playback foreground service: `shouldPlayInBackground` alone
+  // keeps the player going in the background but with no service behind it, so the
+  // OS may throttle or stop playback once the screen locks. Re-applied each time the
+  // player is rebuilt for a new source; releasing a player clears its controls natively.
+  useEffect(() => {
+    if (!source || !lockScreen) return;
+    player.setActiveForLockScreen(true, lockScreen, {
+      showSeekForward: true,
+      showSeekBackward: true,
+    });
+  }, [player, source, lockScreen]);
+
   const load = useCallback(
-    async (url: string) => {
+    async (url: string, metadata?: AudioMetadata) => {
       // Swapping the url rebuilds the player, which resets the rate to 1x.
       setSpeed(1);
       setAudioUrl(url);
+      setLockScreen(metadata ?? null);
     },
     [],
   );

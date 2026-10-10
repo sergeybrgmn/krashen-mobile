@@ -99,6 +99,7 @@
     "fluentModeHint": "Substantive answers for experienced listeners. May take longer.",
     "manageSubscription": "Manage Subscription",
     "manageSubscriptionHint": "Change or cancel your plan in the App Store",
+    "manageSubscriptionHintAndroid": "Change or cancel your plan in Google Play",
     "restorePurchases": "Restore Purchases",
     "shareAnalytics": "Share analytics",
     "shareAnalyticsHint": "Helps us improve Krashen",
@@ -106,12 +107,14 @@
     "deleteAccount": "Delete Account",
     "restoreDone": "Your purchases have been restored.",
     "restoreEmpty": "No previous purchases were found for this Apple ID.",
+    "restoreEmptyAndroid": "No previous purchases were found for this Google account.",
     "restoreFailed": "Could not restore purchases. Please try again."
   },
   "deleteAccount": {
     "title": "Delete account?",
     "message": "This permanently deletes your account, your saved words and your question history. It cannot be undone.",
     "subscriptionNote": "Your subscription is billed by Apple and is not cancelled by deleting your account. To stop billing, cancel it in Settings › Apple Account › Subscriptions.",
+    "subscriptionNoteAndroid": "Your subscription is billed by Google Play and is not cancelled by deleting your account. To stop billing, cancel it in the Play Store app › your profile picture › Payments & subscriptions › Subscriptions.",
     "continue": "Continue",
     "confirmTitle": "Are you sure?",
     "confirmMessage": "Your account and all of its data will be removed immediately. This is permanent.",

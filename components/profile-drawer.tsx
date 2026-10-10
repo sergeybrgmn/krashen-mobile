@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -32,6 +34,13 @@ import { posthog } from '@/services/analytics';
 import { deleteMe, updateMe } from '@/services/api';
 import { PRO_ENTITLEMENT } from '@/services/purchases';
 import { setUiLanguage, SUPPORTED_UI_LANGUAGES, UiLanguage } from '@/services/i18n';
+
+/** The store's copy differs per platform; Android variants carry this suffix in the locale files. */
+const STORE_SUFFIX = Platform.OS === 'android' ? 'Android' : '';
+
+/** Play Store's subscription management, scoped to this app. */
+const PLAY_SUBSCRIPTIONS_URL =
+  'https://play.google.com/store/account/subscriptions?package=app.krashen';
 
 const UI_LANGUAGE_NAMES: Record<UiLanguage, string> = {
   en: 'English',
@@ -91,7 +100,7 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
       // guideline 3.1.1 expects this control to report.
       Alert.alert(
         t('profile.restorePurchases'),
-        restored ? t('profile.restoreDone') : t('profile.restoreEmpty'),
+        restored ? t('profile.restoreDone') : t(`profile.restoreEmpty${STORE_SUFFIX}`),
       );
     } catch (e) {
       // restorePurchases throws on store and network failures. Without a catch
@@ -112,13 +121,18 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
     }
   }, [refetchMe, t]);
 
-  // Cancelling, upgrading and downgrading all belong to Apple — there is no API
-  // to do any of it, by design. This opens Apple's own sheet, which is the only
-  // place it can happen. Refetch on return so a cancellation shows up as an
-  // expiry date rather than a renewal one.
+  // Cancelling, upgrading and downgrading all belong to the store — there is no API
+  // to do any of it, by design. This opens the store's own subscription screen,
+  // which is the only place it can happen: Apple's sheet on iOS, the Play Store's
+  // subscriptions page for this app on Android. Refetch on return so a
+  // cancellation shows up as an expiry date rather than a renewal one.
   const handleManageSubscription = useCallback(async () => {
     try {
-      await Purchases.showManageSubscriptions();
+      if (Platform.OS === 'android') {
+        await Linking.openURL(PLAY_SUBSCRIPTIONS_URL);
+      } else {
+        await Purchases.showManageSubscriptions();
+      }
     } catch (e) {
       console.warn('Could not open subscription management', e);
     }
@@ -203,10 +217,10 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
   }, [getToken, onClose, signOut, router, t]);
 
   const handleDeleteAccount = useCallback(() => {
-    // Subscribers additionally get told that Apple, not Krashen, owns the billing
+    // Subscribers additionally get told that the store, not Krashen, owns the billing
     // lifecycle — deleting the account here does not stop the charges.
     const message = me?.is_subscribed
-      ? `${t('deleteAccount.message')}\n\n${t('deleteAccount.subscriptionNote')}`
+      ? `${t('deleteAccount.message')}\n\n${t(`deleteAccount.subscriptionNote${STORE_SUFFIX}`)}`
       : t('deleteAccount.message');
 
     Alert.alert(t('deleteAccount.title'), message, [
@@ -413,7 +427,7 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
                 </View>
               </View>
 
-              {/* Subscribers only — Apple's sheet is meaningless without one.
+              {/* Subscribers only — the store's page is meaningless without one.
                   Sits above Restore Purchases because cancelling is the more
                   likely errand for someone who already pays. */}
               {me?.is_subscribed && (
@@ -425,7 +439,7 @@ export function ProfileDrawer({ visible, onClose }: ProfileDrawerProps) {
                         {t('profile.manageSubscription')}
                       </ThemedText>
                       <ThemedText type="small" style={styles.responseLangHint}>
-                        {t('profile.manageSubscriptionHint')}
+                        {t(`profile.manageSubscriptionHint${STORE_SUFFIX}`)}
                       </ThemedText>
                     </View>
                   </View>

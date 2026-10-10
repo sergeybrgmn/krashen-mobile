@@ -159,7 +159,8 @@ export default function PlayerScreen() {
         ]);
       }
       if (cancelled) return;
-      setPodcast(podcasts.find((p) => p.id === podcastId) ?? null);
+      const pod = podcasts.find((p) => p.id === podcastId) ?? null;
+      setPodcast(pod);
       const ep = episodes.find((e) => e.id === episodeId) ?? null;
       setEpisode(ep);
       setMetaLoading(false);
@@ -167,7 +168,11 @@ export default function PlayerScreen() {
         posthog?.capture('demo_episode_opened', { episode_id: episodeId });
       }
       if (ep?.audio_url) {
-        player.load(ep.audio_url);
+        player.load(ep.audio_url, {
+          title: ep.title,
+          artist: pod?.title,
+          artworkUrl: pod?.cover_url,
+        });
         posthog?.capture('episode_started', {
           episode_id: episodeId,
           podcast_id: podcastId,
