@@ -1,9 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { Episode } from '@/services/api';
+import { SavedProgress, isFinished, resumePosition } from '@/services/playback-progress';
 
 function formatDuration(seconds: number): string {
   const s = Math.floor(seconds);
@@ -24,15 +26,29 @@ function formatDate(iso: string, locale: string): string {
 
 interface Props {
   episode: Episode;
+  /** Where the listener stopped, if they've played it. */
+  progress?: SavedProgress;
   onPress: () => void;
   /** When true, show a "PRO" badge on episodes the user can't access without upgrading. */
   showProBadge?: boolean;
 }
 
-export function EpisodeCard({ episode, onPress, showProBadge = false }: Props) {
-  const { i18n } = useTranslation();
-  const hasMeta = episode.published_at || episode.duration != null;
+export function EpisodeCard({ episode, progress, onPress, showProBadge = false }: Props) {
+  const { t, i18n } = useTranslation();
   const isProLocked = showProBadge && !episode.is_free;
+
+  // The player's measured duration beats the feed's, which is often rounded or missing.
+  const total = progress?.duration ?? episode.duration;
+  const played = !!progress && isFinished(progress.position, total);
+  const inProgress = !!progress && !played && resumePosition(progress) > 0;
+  const fraction = inProgress && total ? Math.min(1, progress.position / total) : null;
+  const durationText =
+    total == null
+      ? null
+      : inProgress
+        ? t('home.timeLeft', { time: formatDuration(Math.max(0, total - progress.position)) })
+        : formatDuration(total);
+  const hasMeta = episode.published_at || durationText || played;
 
   return (
     <Pressable
@@ -50,14 +66,31 @@ export function EpisodeCard({ episode, onPress, showProBadge = false }: Props) {
               {formatDate(episode.published_at, i18n.language)}
             </ThemedText>
           )}
-          {episode.published_at && episode.duration != null && (
+          {episode.published_at && durationText && (
             <ThemedText style={styles.metaDot}>&middot;</ThemedText>
           )}
-          {episode.duration != null && (
-            <ThemedText style={styles.metaText}>
-              {formatDuration(episode.duration)}
+          {durationText && (
+            <ThemedText style={[styles.metaText, inProgress && styles.metaProgress]}>
+              {durationText}
             </ThemedText>
           )}
+          {played && (episode.published_at || durationText) && (
+            <ThemedText style={styles.metaDot}>&middot;</ThemedText>
+          )}
+          {played && (
+            <View style={styles.played}>
+              <Ionicons name="checkmark-circle" size={14} color={Colors.cyan} />
+              <ThemedText style={[styles.metaText, styles.metaProgress]}>
+                {t('home.played')}
+              </ThemedText>
+            </View>
+          )}
+        </View>
+      )}
+
+      {fraction != null && (
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${fraction * 100}%` }]} />
         </View>
       )}
 
@@ -109,6 +142,25 @@ const styles = StyleSheet.create({
   metaDot: {
     fontSize: 13,
     color: Colors.textMuted,
+  },
+  metaProgress: {
+    color: Colors.cyan,
+  },
+  played: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  progressTrack: {
+    height: 3,
+    borderRadius: Radii.pill,
+    backgroundColor: Colors.border,
+    marginTop: Spacing.sm,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.cyan,
   },
   badgeRow: {
     flexDirection: 'row',

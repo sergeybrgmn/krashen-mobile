@@ -15,7 +15,9 @@
     "loadingEpisodes": "Loading episodes...",
     "noEpisodes": "No episodes",
     "episodeCount_one": "{{count}} episode",
-    "episodeCount_other": "{{count}} episodes"
+    "episodeCount_other": "{{count}} episodes",
+    "timeLeft": "{{time}} left",
+    "played": "Played"
   },
   "player": {
     "backToEpisodes": "← Back to episodes",

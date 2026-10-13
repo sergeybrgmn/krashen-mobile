@@ -35,6 +35,7 @@ import { useEpisodeData } from '@/hooks/use-episode-data';
 import { useExplanationLanguage } from '@/hooks/use-explanation-language';
 import { useMe } from '@/hooks/use-me';
 import { usePaywall } from '@/hooks/use-paywall';
+import { usePlaybackProgress } from '@/hooks/use-playback-progress';
 import { useSavedWords } from '@/hooks/use-saved-words';
 import { useWakeLock } from '@/hooks/use-wake-lock';
 import {
@@ -49,6 +50,7 @@ import {
   fetchEpisodes,
 } from '@/services/api';
 import { posthog } from '@/services/analytics';
+import { SavedProgress, loadProgress, resumePosition } from '@/services/playback-progress';
 
 const MAX_RECORDING_MS = 20_000;
 
@@ -113,6 +115,15 @@ export default function PlayerScreen() {
 
   useWakeLock(player.isPlaying || recorder.isRecording);
 
+  usePlaybackProgress({
+    episodeId: episodeId ?? null,
+    position: player.position,
+    duration: player.duration,
+    isPlaying: player.isPlaying,
+    ready: player.ready,
+    engaged: player.engaged,
+  });
+
   // Preserve where the guest is so they return to this exact episode after
   // signing in from a gate.
   const buildReturnTo = useCallback((): string => {
@@ -139,8 +150,10 @@ export default function PlayerScreen() {
     (async () => {
       // Signed in → authed metadata; signed out → the public demo metadata so
       // guests can browse/listen with no account and no wall.
+      // Where the listener stopped is fetched alongside, so the audio opens there.
       let podcasts: Podcast[];
       let episodes: Episode[];
+      let saved: SavedProgress | null;
       if (isSignedIn) {
         const jwtTemplate = process.env.EXPO_PUBLIC_CLERK_JWT_TEMPLATE;
         const token = await getToken(jwtTemplate ? { template: jwtTemplate } : undefined);
@@ -148,14 +161,16 @@ export default function PlayerScreen() {
           if (!cancelled) setMetaLoading(false);
           return;
         }
-        [podcasts, episodes] = await Promise.all([
+        [podcasts, episodes, saved] = await Promise.all([
           fetchPodcasts(token),
           fetchEpisodes(token, podcastId),
+          loadProgress(episodeId, token),
         ]);
       } else {
-        [podcasts, episodes] = await Promise.all([
+        [podcasts, episodes, saved] = await Promise.all([
           fetchDemoPodcasts(),
           fetchDemoEpisodes(podcastId),
+          loadProgress(episodeId, null),
         ]);
       }
       if (cancelled) return;
@@ -168,15 +183,21 @@ export default function PlayerScreen() {
         posthog?.capture('demo_episode_opened', { episode_id: episodeId });
       }
       if (ep?.audio_url) {
-        player.load(ep.audio_url, {
-          title: ep.title,
-          artist: pod?.title,
-          artworkUrl: pod?.cover_url,
-        });
+        const startAt = resumePosition(saved);
+        player.load(
+          ep.audio_url,
+          {
+            title: ep.title,
+            artist: pod?.title,
+            artworkUrl: pod?.cover_url,
+          },
+          startAt,
+        );
         posthog?.capture('episode_started', {
           episode_id: episodeId,
           podcast_id: podcastId,
           target_language: targetLanguage,
+          resumed_at: Math.round(startAt),
         });
       }
     })();

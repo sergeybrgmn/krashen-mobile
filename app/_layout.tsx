@@ -14,6 +14,7 @@ import '@/services/i18n';
 import { configurePurchases, identifyUser, resetUser } from '@/services/purchases';
 import { configureAnalytics, identifyAnalyticsUser, resetAnalyticsUser } from '@/services/analytics';
 import { configureCrisp, identifyCrispUser, resetCrispUser } from '@/services/crisp';
+import { clearLocalProgress } from '@/services/playback-progress';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -61,6 +62,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       void resetUser();
       resetAnalyticsUser();
       resetCrispUser();
+      // The account's resume points live on the server; the next one on this
+      // device shouldn't inherit them.
+      void clearLocalProgress();
     }
   }, [isLoaded, isSignedIn, userId, user]);
 

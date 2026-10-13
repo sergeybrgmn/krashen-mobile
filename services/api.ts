@@ -94,6 +94,17 @@ export interface EpisodeQuestion {
   created_at: string;
 }
 
+/** Where the user stopped in an episode, as the backend stores it. */
+export interface PlaybackProgress {
+  episode_id: string;
+  /** Seconds into the episode. */
+  position: number;
+  /** Seconds, as the player measured it; null if it wasn't known at save time. */
+  duration: number | null;
+  /** Server clock (ISO 8601). */
+  updated_at: string;
+}
+
 export interface Me {
   id: string;
   name: string | null;
@@ -315,4 +326,41 @@ export async function deleteSavedWord(token: string, id: string): Promise<void> 
     err.status = res.status;
     throw err;
   }
+}
+
+/** Where the user stopped in an episode, or null if they never played it. */
+export function fetchEpisodeProgress(
+  token: string,
+  episodeId: string,
+): Promise<PlaybackProgress | null> {
+  return fetchJSON(`/api/episode/${episodeId}/progress`, { headers: authHeaders(token) });
+}
+
+/** Record where the user is in an episode. Last write wins server-side. */
+export function saveEpisodeProgress(
+  token: string,
+  episodeId: string,
+  position: number,
+  duration: number | null,
+): Promise<PlaybackProgress> {
+  return fetchJSON(`/api/episode/${episodeId}/progress`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ position, duration }),
+  });
+}
+
+/** The user's progress for every episode of a podcast they've played. */
+export async function fetchPodcastProgress(
+  token: string,
+  podcastId: string,
+): Promise<PlaybackProgress[]> {
+  const page = await fetchJSON<{ items: PlaybackProgress[] }>(
+    `/api/podcast/${podcastId}/progress`,
+    { headers: authHeaders(token) },
+  );
+  return page.items;
 }

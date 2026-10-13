@@ -22,6 +22,7 @@ import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/user-avatar';
 import { Colors, Spacing } from '@/constants/theme';
 import { useExplanationLanguage } from '@/hooks/use-explanation-language';
+import { useEpisodeProgress } from '@/hooks/use-episode-progress';
 import { useEpisodes } from '@/hooks/use-episodes';
 import { useMe } from '@/hooks/use-me';
 import { usePaywall } from '@/hooks/use-paywall';
@@ -55,13 +56,17 @@ export default function HomeScreen() {
     loading: episodesLoading,
     refetch: refetchEpisodes,
   } = useEpisodes(selectedPodcast?.id ?? null);
+  const { progress, refetch: refetchProgress } = useEpisodeProgress(
+    selectedPodcast?.id ?? null,
+    episodes,
+  );
 
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetchPodcasts(), refetchEpisodes()]);
+    await Promise.all([refetchPodcasts(), refetchEpisodes(), refetchProgress()]);
     setRefreshing(false);
-  }, [refetchPodcasts, refetchEpisodes]);
+  }, [refetchPodcasts, refetchEpisodes, refetchProgress]);
 
   // Skip the first focus — initial mount already fetched.
   const isFirstFocus = useRef(true);
@@ -73,7 +78,8 @@ export default function HomeScreen() {
       }
       void refetchPodcasts();
       void refetchEpisodes();
-    }, [refetchPodcasts, refetchEpisodes]),
+      void refetchProgress();
+    }, [refetchPodcasts, refetchEpisodes, refetchProgress]),
   );
 
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -258,6 +264,7 @@ export default function HomeScreen() {
                   <EpisodeCard
                     key={ep.id}
                     episode={ep}
+                    progress={progress.get(ep.id)}
                     showProBadge={showProBadge}
                     onPress={() => handleEpisodeTap(ep)}
                   />
