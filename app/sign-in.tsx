@@ -1,6 +1,7 @@
-import { useSignIn, useSignInWithApple, useSignUp, useSSO } from '@clerk/clerk-expo';
+import { useSignIn, useSignUp, useSSO } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,7 +29,6 @@ export default function SignInScreen() {
   const { signIn, setActive: setSignInActive, isLoaded: signInLoaded } = useSignIn();
   const { signUp, setActive: setSignUpActive, isLoaded: signUpLoaded } = useSignUp();
   const { startSSOFlow } = useSSO();
-  const { startAppleAuthenticationFlow } = useSignInWithApple();
   const router = useRouter();
   const { t } = useTranslation();
   const { reason, returnTo } = useLocalSearchParams<{ reason?: string; returnTo?: string }>();
@@ -244,59 +244,99 @@ export default function SignInScreen() {
     setNotice('');
   }, []);
 
-  // Sign in with Apple. The hook exchanges the native Apple ID token with Clerk
-  // and handles the sign-in vs. sign-up transfer itself, so one call covers both
-  // a returning user and a first-time one.
+  // Sign in with Apple. This is the sequence Clerk's `useSignInWithApple` runs,
+  // done here by hand because the hook loses the user's name. Apple puts the
+  // name only in the native credential, never in the identity token, and only
+  // on an Apple ID's first authorization for this app. The hook never passed it
+  // on, so every Apple account was created nameless.
+  //
+  // The Apple ID token is exchanged through a sign-in. If Clerk reports it as
+  // `transferable`, the Apple ID has no account yet, and it is transferred into
+  // a sign-up that carries the name and legal consent. The instance requires
+  // that consent; the consent row under these buttons is shown for every
+  // method, which is what makes asserting it honest. A new Apple user stuck
+  // without a session cost an App Store rejection, so the name is never allowed
+  // to block the sign-up.
   const handleAppleSignIn = useCallback(async () => {
+    if (!isLoaded || !signIn || !signUp || !setSignInActive || !setSignUpActive) {
+      setError(t('auth.notReady'));
+      return;
+    }
     setError('');
     setLoading(true);
     try {
-      const { createdSessionId, setActive, signUp: appleSignUp } =
-        await startAppleAuthenticationFlow();
-      if (createdSessionId && setActive) {
-        await setActive({ session: createdSessionId });
-        finishAuth();
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: Crypto.randomUUID(),
+      });
+      if (!credential.identityToken) {
+        console.warn('Apple returned no identity token');
+        setError(t('auth.appleFailed'));
         return;
       }
-      // A brand-new social user lands here. The instance requires express legal
-      // consent, but neither social hook accepts `legalAccepted` — the params of
-      // both `startAppleAuthenticationFlow` and `startSSOFlow` carry only
-      // `unsafeMetadata` — so Clerk parks the sign-up at `missing_requirements`
-      // and issues no session. Supplying the field finishes it. The consent row
-      // under these buttons is shown for every method, which is what makes
-      // asserting it honest.
-      //
-      // Missing this cost an App Store rejection: a reviewer's fresh Apple ID
-      // took this path and saw only "Apple sign in failed".
-      if (setActive && appleSignUp?.status === 'missing_requirements') {
-        const completed = await appleSignUp.update({ legalAccepted: true });
-        if (completed.status === 'complete' && completed.createdSessionId) {
-          await setActive({ session: completed.createdSessionId });
+
+      const attempt = await signIn.create({
+        strategy: 'oauth_token_apple',
+        token: credential.identityToken,
+      });
+      if (attempt.firstFactorVerification.status !== 'transferable') {
+        if (attempt.status === 'complete' && attempt.createdSessionId) {
+          await setSignInActive({ session: attempt.createdSessionId });
           finishAuth();
           return;
         }
-        console.warn('Apple sign-up still incomplete after legal consent', {
-          status: completed.status,
-          missingFields: completed.missingFields,
-          unverifiedFields: completed.unverifiedFields,
-        });
-      } else {
         console.warn('Apple sign-in produced no session', {
-          signUpStatus: appleSignUp?.status,
-          missingFields: appleSignUp?.missingFields,
-          unverifiedFields: appleSignUp?.unverifiedFields,
+          status: attempt.status,
+          firstFactorStatus: attempt.firstFactorVerification.status,
         });
+        setError(t('auth.appleFailed'));
+        return;
       }
+
+      // A returning Apple ID sends no name, and the user can also clear it in
+      // Apple's sheet, so send only the parts that are actually there.
+      const givenName = credential.fullName?.givenName?.trim();
+      const familyName = credential.fullName?.familyName?.trim();
+      const name = {
+        ...(givenName ? { firstName: givenName } : {}),
+        ...(familyName ? { lastName: familyName } : {}),
+      };
+      let created = await signUp
+        .create({ transfer: true, legalAccepted: true, ...name })
+        .catch((e: unknown) => {
+          if (!givenName && !familyName) throw e;
+          console.warn('Apple sign-up rejected the name, retrying without it', e);
+          return signUp.create({ transfer: true, legalAccepted: true });
+        });
+      // Consent is passed above, so this shouldn't happen. It's kept as a
+      // fallback because missing it is what got the app rejected.
+      if (created.status === 'missing_requirements') {
+        created = await created.update({ legalAccepted: true });
+      }
+      if (created.status === 'complete' && created.createdSessionId) {
+        await setSignUpActive({ session: created.createdSessionId });
+        finishAuth();
+        return;
+      }
+      console.warn('Apple sign-up incomplete', {
+        status: created.status,
+        missingFields: created.missingFields,
+        unverifiedFields: created.unverifiedFields,
+      });
       setError(t('auth.appleFailed'));
     } catch (e: unknown) {
       // Backing out of the native sheet is a normal choice, not an error to report.
       if ((e as { code?: string })?.code === 'ERR_REQUEST_CANCELED') return;
       const msg = (e as { errors?: { message: string }[] })?.errors?.[0]?.message;
+      console.warn('Apple sign-in failed', e);
       setError(msg ?? t('auth.appleFailed'));
     } finally {
       setLoading(false);
     }
-  }, [startAppleAuthenticationFlow, finishAuth, t]);
+  }, [isLoaded, signIn, signUp, setSignInActive, setSignUpActive, finishAuth, t]);
 
   const handleGoogleSignIn = useCallback(async () => {
     setError('');
@@ -310,7 +350,10 @@ export default function SignInScreen() {
         finishAuth();
         return;
       }
-      // Same legal-consent gap as the Apple flow above.
+      // A brand-new Google user lands here. `startSSOFlow` accepts no
+      // `legalAccepted`, only `unsafeMetadata`, so Clerk parks the sign-up at
+      // `missing_requirements` (see the Apple flow above) and issues no
+      // session. Supplying the field finishes it.
       if (setActive && googleSignUp?.status === 'missing_requirements') {
         const completed = await googleSignUp.update({ legalAccepted: true });
         if (completed.status === 'complete' && completed.createdSessionId) {
