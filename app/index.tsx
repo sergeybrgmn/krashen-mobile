@@ -156,9 +156,9 @@ export default function HomeScreen() {
         openPlayer(episode, explanationLanguage);
         return;
       }
-      // Only one option → pick silently, persist for next time.
+      // Only one option → pick silently, but don't persist: it wasn't a choice,
+      // and saving it would clobber the user's pick for multi-language episodes.
       if (options.length === 1) {
-        void saveExplanationLanguage(options[0]);
         openPlayer(episode, options[0]);
         return;
       }
@@ -166,7 +166,7 @@ export default function HomeScreen() {
       setPendingEpisode(episode);
       setPickerVisible(true);
     },
-    [selectedPodcast, explanationLanguage, explanationLangLoaded, saveExplanationLanguage, openPlayer, me, presentPaywall, refetchMe, isSignedIn],
+    [selectedPodcast, explanationLanguage, explanationLangLoaded, openPlayer, me, presentPaywall, refetchMe, isSignedIn],
   );
 
   const handlePickerConfirm = useCallback(
